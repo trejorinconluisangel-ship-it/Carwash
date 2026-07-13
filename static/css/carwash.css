@@ -48,6 +48,8 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html { overflow-x: hidden; max-width: 100%; }
+
 body {
   background: var(--bg-deep);
   color: var(--text);
@@ -55,6 +57,7 @@ body {
   min-height: 100vh;
   display: flex;
   overflow-x: hidden;
+  max-width: 100%;
 }
 
 /* ── Grid animated background ─────────────────────────── */
@@ -292,7 +295,11 @@ body::before {
 }
 
 /* ── Table ────────────────────────────────────────────── */
-.table-wrapper { overflow-x: auto; }
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
 
 table {
   width: 100%;
@@ -518,6 +525,10 @@ tbody td {
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 
+/* ── Grid helpers adicionales ──────────────────────────── */
+.kpi-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.kpi-mini   { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
 /* ── Glow pulse ───────────────────────────────────────── */
 @keyframes glowPulse {
   0%, 100% { opacity: 0.6; }
@@ -632,6 +643,7 @@ tbody td {
 .sidebar-overlay.open { display: block; }
 
 @media (max-width: 768px) {
+  /* ── Layout ──────────────────────────────────────────── */
   .mobile-topbar { display: flex; }
 
   .sidebar {
@@ -644,38 +656,59 @@ tbody td {
 
   .main {
     margin-left: 0;
-    padding: 72px 16px 100px;  /* top: espacio topbar, bottom: espacio help btn */
+    padding: 72px 14px calc(100px + env(safe-area-inset-bottom));
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 
-  .kpi-grid { grid-template-columns: 1fr 1fr; }
-  .kpi-grid-5 { grid-template-columns: 1fr 1fr; }
+  /* ── Grids responsive ────────────────────────────────── */
+  .kpi-grid, .kpi-grid-5, .kpi-grid-4 { grid-template-columns: 1fr 1fr; }
+  .kpi-mini  { grid-template-columns: 1fr 1fr; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .charts-grid { grid-template-columns: 1fr; }
 
-  /* Dashboard topbar */
-  .dash-topbar { flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-  .dash-topbar .page-title { font-size: 1.1rem; }
+  /* ── Topbar: apilar título y botón ───────────────────── */
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .topbar > a.btn,
+  .topbar > .d-flex {
+    width: 100%;
+  }
+  .topbar > a.btn { text-align: center; justify-content: center; display: flex; }
+  .page-title { font-size: 1.1rem; }
+  .page-subtitle { font-size: .78rem; }
 
-  /* Period selector */
+  /* ── Cards: permitir scroll interno de tablas ─────────── */
+  .card { overflow: visible; padding: 14px; }
+
+  /* ── Tablas: scroll horizontal suave ─────────────────── */
+  .table-wrapper {
+    max-width: calc(100vw - 28px);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table { min-width: 0; }
+
+  /* ── Dashboard ───────────────────────────────────────── */
+  .dash-topbar { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; }
   .period-card { padding: 12px 14px; }
   .period-form { gap: 10px; }
   .period-date-wrap { margin-left: 0; width: 100%; }
   .period-date-input { width: 100%; flex: 1; }
-  .period-selector { width: 100%; justify-content: space-between; }
+  .period-selector { width: 100%; }
   .period-btn { flex: 1; text-align: center; padding: 7px 4px; font-size: .75rem; }
 
-  /* Tablas: scroll horizontal */
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { min-width: 500px; }
-
-  /* Botones touch-friendly */
-  .btn, button[type=submit] { min-height: 44px; }
+  /* ── Botones touch-friendly ──────────────────────────── */
+  .btn { min-height: 44px; }
+  button[type=submit] { min-height: 44px; }
+  .btn-sm { min-height: 36px; }
   .nav-item { padding: 14px 20px; }
 
-  /* Help panel full-width en móvil */
+  /* ── Help panel full-width ───────────────────────────── */
   .help-panel { width: 100vw; right: -100vw; }
-
-  /* Safe area para iPhone con notch */
-  .main { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
   .help-btn { bottom: calc(24px + env(safe-area-inset-bottom)); }
 }
