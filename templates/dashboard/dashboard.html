@@ -3,20 +3,20 @@
 
 {% block content %}
 <!-- ── Topbar ─────────────────────────────────────────── -->
-<div class="topbar">
+<div class="topbar dash-topbar">
   <div>
-    <div class="page-title">⚡ Dashboard General</div>
+    <div class="page-title">⚡ Dashboard</div>
     <div class="page-subtitle">
       {{ inicio|date:"d M Y" }} — {{ fin|date:"d M Y" }}
-      &nbsp;·&nbsp; <span class="glow-dot"></span> Sistema activo
+      &nbsp;·&nbsp; <span class="glow-dot"></span> Activo
     </div>
   </div>
-  <a href="{% url 'servicio_crear' %}" class="btn btn-primary">+ Nuevo Servicio</a>
+  <a href="{% url 'servicio_crear' %}" class="btn btn-primary btn-sm">+ Servicio</a>
 </div>
 
 <!-- ── Selector de periodo ────────────────────────────── -->
-<div class="card mb-3" style="padding:14px 20px;">
-  <form method="get" style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+<div class="card mb-3 period-card">
+  <form method="get" class="period-form">
     <div class="period-selector">
       {% for p, label in periodo_opciones.items %}
         <button type="submit" name="periodo" value="{{ p }}"
@@ -25,15 +25,15 @@
         </button>
       {% endfor %}
     </div>
-    <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
-      <label class="form-label mb-0 text-muted" style="white-space:nowrap; font-size:.75rem;">Fecha ref.:</label>
-      <input type="date" name="fecha" value="{{ fecha_sel }}" class="form-control" style="width:155px;" onchange="this.form.submit()">
+    <div class="period-date-wrap">
+      <label class="form-label mb-0 text-muted" style="white-space:nowrap; font-size:.75rem;">Fecha:</label>
+      <input type="date" name="fecha" value="{{ fecha_sel }}" class="form-control period-date-input" onchange="this.form.submit()">
     </div>
   </form>
 </div>
 
 <!-- ── KPIs Combinados ────────────────────────────────── -->
-<div style="display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:20px;">
+<div class="kpi-grid-5 mb-3">
   <div class="kpi-card cyan">
     <div class="kpi-icon" style="color:var(--cyan)">💰</div>
     <div class="kpi-label">Ingresos Totales</div>

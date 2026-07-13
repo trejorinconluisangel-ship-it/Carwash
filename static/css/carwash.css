@@ -546,12 +546,36 @@ tbody td {
 ::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.2); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(0,212,255,0.4); }
 
+/* ── KPI grid 5 columnas ──────────────────────────────── */
+.kpi-grid-5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+
+/* ── Period selector ──────────────────────────────────── */
+.period-card { padding: 14px 20px; }
+.period-form {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.period-date-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.period-date-input { width: 155px; }
+
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 900px) {
   .sidebar { width: 220px; }
   .main { margin-left: 220px; padding: 20px; }
   .charts-grid { grid-template-columns: 1fr; }
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .kpi-grid-5 { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* ── Mobile topbar + hamburger ────────────────────────── */
@@ -624,8 +648,21 @@ tbody td {
   }
 
   .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .kpi-grid-5 { grid-template-columns: 1fr 1fr; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .charts-grid { grid-template-columns: 1fr; }
+
+  /* Dashboard topbar */
+  .dash-topbar { flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .dash-topbar .page-title { font-size: 1.1rem; }
+
+  /* Period selector */
+  .period-card { padding: 12px 14px; }
+  .period-form { gap: 10px; }
+  .period-date-wrap { margin-left: 0; width: 100%; }
+  .period-date-input { width: 100%; flex: 1; }
+  .period-selector { width: 100%; justify-content: space-between; }
+  .period-btn { flex: 1; text-align: center; padding: 7px 4px; font-size: .75rem; }
 
   /* Tablas: scroll horizontal */
   .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
