@@ -3,7 +3,14 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CarWash Pro">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#050c18">
+  <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
+  <link rel="manifest" href="{% static 'manifest.json' %}">
   <title>{% block title %}CarWash Pro{% endblock %} — AutoLavado</title>
   <link rel="stylesheet" href="{% static 'css/carwash.css' %}">
   <style>
@@ -149,6 +156,15 @@
   </nav>
 </aside>
 
+<!-- ══ TOPBAR MOBILE ═════════════════════════════════════ -->
+<div class="mobile-topbar">
+  <button class="hamburger" id="hamburger" aria-label="Menú">
+    <span></span><span></span><span></span>
+  </button>
+  <span class="mobile-title">🚗 CarWash Pro</span>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <!-- ══ MAIN ════════════════════════════════════════════= -->
 <main class="main">
   {% if messages %}
@@ -286,6 +302,7 @@
 
 <script src="{% static 'js/chart.umd.min.js' %}"></script>
 <script>
+  // ── Help panel ────────────────────────────────────────
   const helpBtn     = document.getElementById('helpBtn');
   const helpPanel   = document.getElementById('helpPanel');
   const helpOverlay = document.getElementById('helpOverlay');
@@ -297,6 +314,34 @@
   helpBtn.addEventListener('click', openHelp);
   helpClose.addEventListener('click', closeHelp);
   helpOverlay.addEventListener('click', closeHelp);
+
+  // ── Sidebar hamburguesa (mobile) ──────────────────────
+  const sidebar        = document.querySelector('.sidebar');
+  const hamburger      = document.getElementById('hamburger');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+  function openSidebar()  {
+    sidebar.classList.add('open');
+    sidebarOverlay.classList.add('open');
+    hamburger.classList.add('active');
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    sidebarOverlay.classList.remove('open');
+    hamburger.classList.remove('active');
+  }
+
+  hamburger.addEventListener('click', () => {
+    sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+  sidebarOverlay.addEventListener('click', closeSidebar);
+
+  // Cerrar sidebar al navegar (mobile)
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.addEventListener('click', () => {
+      if (window.innerWidth < 768) closeSidebar();
+    });
+  });
 </script>
 {% block extra_js %}{% endblock %}
 </body>

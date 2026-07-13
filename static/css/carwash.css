@@ -554,9 +554,91 @@ tbody td {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (max-width: 640px) {
-  .sidebar { display: none; }
-  .main { margin-left: 0; padding: 16px; }
+/* ── Mobile topbar + hamburger ────────────────────────── */
+.mobile-topbar {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border);
+  z-index: 200;
+  align-items: center;
+  padding: 0 16px;
+  gap: 14px;
+}
+
+.mobile-title {
+  font-size: 1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hamburger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 4px;
+}
+.hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--cyan);
+  border-radius: 2px;
+  transition: var(--transition);
+}
+.hamburger.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.active span:nth-child(2) { opacity: 0; }
+.hamburger.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 99;
+  backdrop-filter: blur(2px);
+}
+.sidebar-overlay.open { display: block; }
+
+@media (max-width: 768px) {
+  .mobile-topbar { display: flex; }
+
+  .sidebar {
+    left: -280px;
+    width: 260px;
+    transition: left 0.3s cubic-bezier(0.4,0,0.2,1);
+    z-index: 100;
+  }
+  .sidebar.open { left: 0; }
+
+  .main {
+    margin-left: 0;
+    padding: 72px 16px 100px;  /* top: espacio topbar, bottom: espacio help btn */
+  }
+
   .kpi-grid { grid-template-columns: 1fr 1fr; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .charts-grid { grid-template-columns: 1fr; }
+
+  /* Tablas: scroll horizontal */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 500px; }
+
+  /* Botones touch-friendly */
+  .btn, button[type=submit] { min-height: 44px; }
+  .nav-item { padding: 14px 20px; }
+
+  /* Help panel full-width en móvil */
+  .help-panel { width: 100vw; right: -100vw; }
+
+  /* Safe area para iPhone con notch */
+  .main { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+  .help-btn { bottom: calc(24px + env(safe-area-inset-bottom)); }
 }

@@ -1,0 +1,18 @@
+{
+  "name": "CarWash Pro",
+  "short_name": "CarWash",
+  "description": "Sistema de administración para autolavado",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050c18",
+  "theme_color": "#00d4ff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
