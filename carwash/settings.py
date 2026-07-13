@@ -17,6 +17,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8080',
     'http://127.0.0.1:8080',
     'https://*.up.railway.app',
+    'https://*.onrender.com',
     'https://*.ngrok-free.app',
     'https://*.ngrok.io',
 ]
