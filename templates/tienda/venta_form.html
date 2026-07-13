@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block title %}Registrar Venta{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🏷️ {{ titulo }}</div>
+    <div class="page-subtitle">El stock se descuenta automáticamente al confirmar</div>
+  </div>
+  <a href="{% url 'venta_lista' %}" class="btn btn-outline">← Volver</a>
+</div>
+
+<div class="grid-2" style="align-items:start;">
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+      <div>
+        <label class="form-label">Producto *</label>
+        {{ form.producto }}
+      </div>
+      <div class="grid-2 mt-2">
+        <div>
+          <label class="form-label">Cantidad *</label>
+          {{ form.cantidad }}
+        </div>
+        <div>
+          <label class="form-label">Precio unitario ($) *</label>
+          {{ form.precio_unitario }}
+          <div class="text-muted mt-1" style="font-size:.75rem;" id="precio_hint">Precio sugerido de venta</div>
+        </div>
+      </div>
+      <div class="mt-2">
+        <label class="form-label">Fecha *</label>
+        {{ form.fecha }}
+      </div>
+      <div class="mt-2">
+        <label class="form-label">Notas</label>
+        {{ form.notas }}
+      </div>
+      <div class="mt-3 d-flex gap-1">
+        <button type="submit" class="btn btn-green">🏷️ Registrar Venta</button>
+        <a href="{% url 'venta_lista' %}" class="btn btn-outline">Cancelar</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Panel resumen en tiempo real -->
+  <div class="card card-green">
+    <div class="chart-title">💰 Resumen de la Venta</div>
+
+    <div id="stock_aviso" class="alert alert-info" style="display:none;"></div>
+
+    <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+      <div class="text-muted" style="font-size:.75rem; text-transform:uppercase; letter-spacing:1px;">Precio de compra</div>
+      <div id="costo_u" class="fw-bold text-red" style="font-size:1.3rem;">$0.00</div>
+    </div>
+    <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+      <div class="text-muted" style="font-size:.75rem; text-transform:uppercase; letter-spacing:1px;">Total de la venta</div>
+      <div id="total_v" class="fw-bold text-cyan" style="font-size:1.5rem;">$0.00</div>
+    </div>
+    <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+      <div class="text-muted" style="font-size:.75rem; text-transform:uppercase; letter-spacing:1px;">Ganancia</div>
+      <div id="gan_v" class="fw-bold text-green" style="font-size:2rem; text-shadow:0 0 16px rgba(0,255,136,0.4);">$0.00</div>
+    </div>
+    <div style="padding:12px 0;">
+      <div class="text-muted" style="font-size:.75rem; text-transform:uppercase; letter-spacing:1px;">Margen</div>
+      <div id="margen_v" class="fw-bold text-purple" style="font-size:1.5rem;">0%</div>
+    </div>
+
+    <div class="neon-line"></div>
+    <div class="text-muted" style="font-size:.75rem;">
+      Stock disponible: <strong id="stock_disp" class="text-cyan">—</strong>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const PRECIOS = {{ precios_json|safe }};
+
+const selProd  = document.getElementById('id_producto_venta');
+const inpCant  = document.querySelector('[name=cantidad]');
+const inpPrice = document.getElementById('id_precio_unitario_venta');
+const costoEl  = document.getElementById('costo_u');
+const totalEl  = document.getElementById('total_v');
+const ganEl    = document.getElementById('gan_v');
+const marEl    = document.getElementById('margen_v');
+const stockEl  = document.getElementById('stock_disp');
+const avisoEl  = document.getElementById('stock_aviso');
+
+function actualizar() {
+  const pid    = selProd.value;
+  const cant   = parseFloat(inpCant.value) || 1;
+  const precio = parseFloat(inpPrice.value) || 0;
+
+  if (pid && PRECIOS[pid]) {
+    const info   = PRECIOS[pid];
+    const compra = info.compra;
+    const stock  = info.stock;
+    const total  = cant * precio;
+    const costo  = cant * compra;
+    const gan    = total - costo;
+    const margen = costo > 0 ? (gan / costo * 100) : 0;
+
+    costoEl.textContent = '$' + compra.toFixed(2);
+    totalEl.textContent = '$' + total.toFixed(2);
+    ganEl.textContent   = '$' + gan.toFixed(2);
+    ganEl.style.color   = gan >= 0 ? 'var(--green)' : 'var(--red)';
+    marEl.textContent   = margen.toFixed(1) + '%';
+    marEl.style.color   = margen > 30 ? 'var(--green)' : margen > 10 ? 'var(--orange)' : 'var(--red)';
+    stockEl.textContent = stock + ' uds disponibles';
+
+    if (cant > stock) {
+      avisoEl.style.display = 'block';
+      avisoEl.textContent   = `⚠️ Stock insuficiente: solo hay ${stock} unidades`;
+      avisoEl.className     = 'alert alert-danger';
+    } else {
+      avisoEl.style.display = 'none';
+    }
+  }
+}
+
+selProd.addEventListener('change', () => {
+  const pid = selProd.value;
+  if (pid && PRECIOS[pid]) {
+    inpPrice.value = PRECIOS[pid].venta;
+  }
+  actualizar();
+});
+
+inpCant.addEventListener('input', actualizar);
+inpPrice.addEventListener('input', actualizar);
+actualizar();
+</script>
+{% endblock %}

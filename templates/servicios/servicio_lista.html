@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Servicios{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🚿 Servicios Realizados</div>
+    <div class="page-subtitle">Historial con costo de insumos y ganancia por servicio</div>
+  </div>
+  <a href="{% url 'servicio_crear' %}" class="btn btn-primary">+ Registrar Servicio</a>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Hora</th>
+          <th>Servicio</th>
+          <th>Vehículo</th>
+          <th>Precio Cobrado</th>
+          <th>Costo Insumos</th>
+          <th>Ganancia</th>
+          <th>Notas</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in servicios %}
+        <tr>
+          <td class="text-muted">{{ s.fecha|date:"d/m/Y" }}</td>
+          <td class="text-muted">{{ s.hora|time:"H:i" }}</td>
+          <td><span class="badge badge-cyan">{{ s.tipo_servicio }}</span></td>
+          <td><span class="badge badge-purple">{{ s.tipo_vehiculo }}</span></td>
+          <td class="text-cyan fw-bold">${{ s.precio_cobrado }}</td>
+          <td class="text-red" style="font-size:.85rem;">${{ s.costo_insumos }}</td>
+          <td class="text-green fw-bold">${{ s.ganancia|floatformat:2 }}</td>
+          <td class="text-muted" style="font-size:.8rem;">{{ s.notas|default:"—"|truncatechars:30 }}</td>
+          <td>
+            <a href="{% url 'servicio_eliminar' s.pk %}" class="btn btn-danger btn-sm">✕</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" style="text-align:center; padding:40px; color:var(--text-muted);">
+            No hay servicios registrados.
+            <a href="{% url 'servicio_crear' %}" class="text-cyan">Registra el primero.</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

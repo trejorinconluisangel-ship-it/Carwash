@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Insumos por Servicio{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🔗 Insumos por Servicio</div>
+    <div class="page-subtitle">Define cuánto de cada insumo se usa en cada tipo de servicio</div>
+  </div>
+  <a href="{% url 'insumo_servicio_crear' %}" class="btn btn-primary">+ Asignar Insumo</a>
+</div>
+
+<div class="alert alert-info mb-3">
+  💡 Esta configuración permite calcular cuántos servicios puedes realizar con el stock disponible.
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Tipo de Servicio</th>
+          <th>Insumo</th>
+          <th>Cantidad por Servicio</th>
+          <th>Stock Actual</th>
+          <th>Servicios Posibles</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in relaciones %}
+        <tr>
+          <td><span class="badge badge-cyan">{{ r.tipo_servicio }}</span></td>
+          <td class="fw-bold">{{ r.insumo.nombre }}</td>
+          <td class="text-purple">{{ r.cantidad_por_servicio }} {{ r.insumo.unidad_medida }}</td>
+          <td class="{% if r.insumo.stock_bajo %}text-red{% else %}text-green{% endif %}">
+            {{ r.insumo.stock_actual }} {{ r.insumo.unidad_medida }}
+          </td>
+          <td>
+            {% if r.cantidad_por_servicio > 0 %}
+              {% widthratio r.insumo.stock_actual r.cantidad_por_servicio 1 as posibles %}
+              <span class="badge {% if posibles == '0' %}badge-red{% elif posibles|add:'0' < 5 %}badge-orange{% else %}badge-green{% endif %}">
+                ~{{ posibles }} servicios
+              </span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'insumo_servicio_eliminar' r.pk %}" class="btn btn-danger btn-sm">✕</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted);">
+            No hay relaciones configuradas.
+            <a href="{% url 'insumo_servicio_crear' %}" class="text-cyan">Configura ahora.</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

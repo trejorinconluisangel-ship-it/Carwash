@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}Tienda — Productos{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🛍️ Tienda — Inventario de Mercancía</div>
+    <div class="page-subtitle">Productos para venta al cliente: aromatizantes, microfibras, accesorios...</div>
+  </div>
+  <div class="d-flex gap-1">
+    <a href="{% url 'venta_crear' %}" class="btn btn-green">+ Registrar Venta</a>
+    <a href="{% url 'producto_crear' %}" class="btn btn-primary">+ Nuevo Producto</a>
+  </div>
+</div>
+
+<!-- KPIs rápidos -->
+<div class="kpi-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:24px;">
+  <div class="kpi-card cyan">
+    <div class="kpi-icon" style="color:var(--cyan)">📦</div>
+    <div class="kpi-label">Productos en Tienda</div>
+    <div class="kpi-value">{{ productos.count }}</div>
+  </div>
+  <div class="kpi-card orange">
+    <div class="kpi-icon" style="color:var(--orange)">💵</div>
+    <div class="kpi-label">Valor Inventario</div>
+    <div class="kpi-value">${{ total_valor|floatformat:2 }}</div>
+  </div>
+  <div class="kpi-card purple">
+    <div class="kpi-icon" style="color:var(--purple)">📋</div>
+    <div class="kpi-label">Ver Entradas</div>
+    <div class="kpi-value" style="font-size:1rem; margin-top:4px;">
+      <a href="{% url 'entrada_lista' %}" class="btn btn-outline btn-sm">Entradas</a>
+    </div>
+  </div>
+  <div class="kpi-card green">
+    <div class="kpi-icon" style="color:var(--green)">🏷️</div>
+    <div class="kpi-label">Ver Ventas</div>
+    <div class="kpi-value" style="font-size:1rem; margin-top:4px;">
+      <a href="{% url 'venta_lista' %}" class="btn btn-outline btn-sm">Ventas</a>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Categoría</th>
+          <th>Precio Compra</th>
+          <th>Precio Venta</th>
+          <th>Margen</th>
+          <th>Stock</th>
+          <th>Valor Stock</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in productos %}
+        <tr>
+          <td>
+            <a href="{% url 'producto_detalle' p.pk %}" class="text-cyan fw-bold">{{ p.nombre }}</a>
+          </td>
+          <td><span class="badge badge-purple">{{ p.get_categoria_display }}</span></td>
+          <td class="text-red">${{ p.precio_compra }}</td>
+          <td class="text-green fw-bold">${{ p.precio_venta }}</td>
+          <td>
+            <span class="badge {% if p.margen_ganancia > 30 %}badge-green{% elif p.margen_ganancia > 10 %}badge-orange{% else %}badge-red{% endif %}">
+              +{{ p.margen_ganancia }}%
+            </span>
+          </td>
+          <td>
+            <span class="{% if p.stock_bajo %}text-red{% else %}text-green{% endif %} fw-bold">
+              {{ p.stock_actual }}
+            </span>
+            <span class="text-muted" style="font-size:.8rem;"> {{ p.unidad }}</span>
+          </td>
+          <td class="text-orange">${{ p.valor_inventario|floatformat:2 }}</td>
+          <td>
+            {% if p.stock_bajo %}
+              <span class="badge badge-red">⚠ Stock Bajo</span>
+            {% else %}
+              <span class="badge badge-green">✓ OK</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'producto_detalle' p.pk %}" class="btn btn-outline btn-sm">Ver</a>
+              <a href="{% url 'producto_editar' p.pk %}" class="btn btn-outline btn-sm">Editar</a>
+              <a href="{% url 'producto_eliminar' p.pk %}" class="btn btn-danger btn-sm">✕</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" style="text-align:center; padding:40px; color:var(--text-muted);">
+            No hay productos registrados.
+            <a href="{% url 'producto_crear' %}" class="text-cyan">Agrega el primero.</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

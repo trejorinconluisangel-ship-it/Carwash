@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Insumos{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🧴 Insumos</div>
+    <div class="page-subtitle">Inventario de productos y materiales de limpieza</div>
+  </div>
+  <a href="{% url 'insumo_crear' %}" class="btn btn-primary">+ Nuevo Insumo</a>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th>Unidad</th>
+          <th>Costo Unit.</th>
+          <th>Stock Actual</th>
+          <th>Estado</th>
+          <th>Proveedor</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in insumos %}
+        <tr>
+          <td>
+            <a href="{% url 'insumo_detalle' i.pk %}" class="text-cyan fw-bold">{{ i.nombre }}</a>
+          </td>
+          <td><span class="badge badge-purple">{{ i.get_categoria_display }}</span></td>
+          <td class="text-muted">{{ i.get_unidad_medida_display }}</td>
+          <td class="text-orange">${{ i.costo_unitario }}</td>
+          <td>
+            <span class="fw-bold {% if i.stock_bajo %}text-red{% else %}text-green{% endif %}">
+              {{ i.stock_actual }}
+            </span>
+            <span class="text-muted" style="font-size:.8rem;"> {{ i.unidad_medida }}</span>
+          </td>
+          <td>
+            {% if i.stock_bajo %}
+              <span class="badge badge-red">⚠ Bajo</span>
+            {% else %}
+              <span class="badge badge-green">✓ OK</span>
+            {% endif %}
+          </td>
+          <td class="text-muted">{{ i.proveedor|default:"—" }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'insumo_detalle' i.pk %}" class="btn btn-outline btn-sm">Ver</a>
+              <a href="{% url 'insumo_editar' i.pk %}" class="btn btn-outline btn-sm">Editar</a>
+              <a href="{% url 'insumo_eliminar' i.pk %}" class="btn btn-danger btn-sm">✕</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="text-align:center; padding:40px; color:var(--text-muted);">
+            No hay insumos registrados.
+            <a href="{% url 'insumo_crear' %}" class="text-cyan">Agrega el primero.</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

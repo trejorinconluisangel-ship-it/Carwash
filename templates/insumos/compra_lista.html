@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Compras{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🛒 Compras / Entradas de Stock</div>
+    <div class="page-subtitle">Registro de productos comprados y actualización de inventario</div>
+  </div>
+  <a href="{% url 'compra_crear' %}" class="btn btn-green">+ Registrar Compra</a>
+</div>
+
+<div class="kpi-grid" style="grid-template-columns: repeat(3,1fr); max-width:600px; margin-bottom:24px;">
+  <div class="kpi-card orange">
+    <div class="kpi-label">Total Compras</div>
+    <div class="kpi-value text-orange">{{ compras.count }}</div>
+  </div>
+  <div class="kpi-card red">
+    <div class="kpi-label">Gasto Total</div>
+    <div class="kpi-value text-red">${{ total_gastado|floatformat:2 }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Insumo</th>
+          <th>Cantidad</th>
+          <th>Costo Unit.</th>
+          <th>Total</th>
+          <th>Proveedor</th>
+          <th>Notas</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in compras %}
+        <tr>
+          <td class="text-muted">{{ c.fecha|date:"d/m/Y" }}</td>
+          <td><a href="{% url 'insumo_detalle' c.insumo.pk %}" class="text-cyan fw-bold">{{ c.insumo.nombre }}</a></td>
+          <td class="text-cyan">{{ c.cantidad }} {{ c.insumo.unidad_medida }}</td>
+          <td>${{ c.costo_unitario }}</td>
+          <td class="text-green fw-bold">${{ c.costo_total }}</td>
+          <td class="text-muted">{{ c.proveedor|default:"—" }}</td>
+          <td class="text-muted" style="font-size:.8rem;">{{ c.notas|default:"—"|truncatechars:40 }}</td>
+          <td>
+            <a href="{% url 'compra_eliminar' c.pk %}" class="btn btn-danger btn-sm">✕</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="text-align:center; padding:40px; color:var(--text-muted);">
+            No hay compras registradas.
+            <a href="{% url 'compra_crear' %}" class="text-cyan">Registra la primera compra.</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

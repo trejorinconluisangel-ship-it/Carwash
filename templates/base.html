@@ -1,0 +1,303 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}CarWash Pro{% endblock %} — AutoLavado</title>
+  <link rel="stylesheet" href="{% static 'css/carwash.css' %}">
+  <style>
+    /* ── Help Panel ─────────────────────────────────── */
+    .help-btn {
+      position: fixed;
+      bottom: 28px; right: 28px;
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--purple), #7c3aed);
+      border: none;
+      color: #fff;
+      font-size: 1.4rem;
+      font-weight: 800;
+      cursor: pointer;
+      z-index: 999;
+      box-shadow: 0 4px 20px rgba(168,85,247,0.5);
+      transition: all 0.25s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .help-btn:hover { transform: scale(1.1); box-shadow: 0 6px 30px rgba(168,85,247,0.7); }
+
+    .help-panel {
+      position: fixed;
+      top: 0; right: -440px;
+      width: 420px; height: 100vh;
+      background: #080f20;
+      border-left: 1px solid rgba(168,85,247,0.3);
+      z-index: 1000;
+      overflow-y: auto;
+      transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: -10px 0 40px rgba(0,0,0,0.5);
+    }
+    .help-panel.open { right: 0; }
+
+    .help-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+      display: none;
+      backdrop-filter: blur(2px);
+    }
+    .help-overlay.open { display: block; }
+
+    .help-header {
+      padding: 24px;
+      background: linear-gradient(135deg, rgba(168,85,247,0.15), rgba(0,212,255,0.08));
+      border-bottom: 1px solid rgba(168,85,247,0.2);
+      position: sticky; top: 0;
+    }
+    .help-header h2 { font-size:1.1rem; color:#fff; font-weight:700; }
+    .help-header p  { font-size:.8rem; color:var(--text-muted); margin-top:4px; }
+    .help-close-btn {
+      float: right; background: none; border: none;
+      color: var(--text-muted); font-size: 1.4rem; cursor: pointer; line-height:1;
+    }
+    .help-close-btn:hover { color: #fff; }
+
+    .help-body { padding: 20px 24px; }
+
+    .help-section {
+      margin-bottom: 20px;
+      border: 1px solid rgba(168,85,247,0.15);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .help-section-header {
+      padding: 12px 16px;
+      background: rgba(168,85,247,0.08);
+      font-weight: 700;
+      font-size: .85rem;
+      color: var(--purple);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .help-section-body {
+      padding: 12px 16px;
+      font-size: .82rem;
+      line-height: 1.7;
+      color: #94a3b8;
+    }
+    .help-section-body strong { color: var(--cyan); }
+    .help-section-body ul { padding-left: 16px; }
+    .help-section-body li { margin-bottom: 4px; }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="car-icon">🚗</div>
+    <h1>CarWash Pro</h1>
+    <span>Sistema de Gestión</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section">Principal</div>
+    <a href="{% url 'dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <span class="icon">⚡</span> Dashboard
+    </a>
+
+    <div class="nav-section">Servicios de Lavado</div>
+    <a href="{% url 'servicio_lista' %}" class="nav-item {% if request.resolver_match.url_name in 'servicio_lista,servicio_crear,servicio_eliminar' %}active{% endif %}">
+      <span class="icon">🚿</span> Registrar Servicio
+    </a>
+    <a href="{% url 'tipo_servicio_lista' %}" class="nav-item {% if 'tipo_servicio' in request.resolver_match.url_name %}active{% endif %}">
+      <span class="icon">📋</span> Tipos de Servicio
+    </a>
+    <a href="{% url 'tipo_vehiculo_lista' %}" class="nav-item {% if 'tipo_vehiculo' in request.resolver_match.url_name %}active{% endif %}">
+      <span class="icon">🏎️</span> Tipos de Vehículo
+    </a>
+    <a href="{% url 'insumo_servicio_lista' %}" class="nav-item {% if 'insumo_servicio' in request.resolver_match.url_name %}active{% endif %}">
+      <span class="icon">🔗</span> Insumos por Servicio
+    </a>
+
+    <div class="nav-section">Inventario Insumos</div>
+    <a href="{% url 'insumo_lista' %}" class="nav-item {% if request.resolver_match.url_name in 'insumo_lista,insumo_crear,insumo_detalle,insumo_editar,insumo_eliminar' %}active{% endif %}">
+      <span class="icon">🧴</span> Insumos
+    </a>
+    <a href="{% url 'compra_lista' %}" class="nav-item {% if 'compra' in request.resolver_match.url_name %}active{% endif %}">
+      <span class="icon">🛒</span> Compras / Entradas
+    </a>
+    <a href="{% url 'proveedor_lista' %}" class="nav-item {% if 'proveedor' in request.resolver_match.url_name %}active{% endif %}">
+      <span class="icon">🏭</span> Proveedores
+    </a>
+
+    <div class="nav-section">Clientes</div>
+    <a href="{% url 'cliente_lista' %}" class="nav-item {% if 'cliente' in request.resolver_match.url_name or 'vehiculo' in request.resolver_match.url_name %}active{% endif %}">
+      <span class="icon">👤</span> Clientes y Vehículos
+    </a>
+
+    <div class="nav-section">Tienda / Mercancía</div>
+    <a href="{% url 'producto_lista' %}" class="nav-item {% if request.resolver_match.url_name in 'producto_lista,producto_crear,producto_detalle,producto_editar,producto_eliminar' %}active{% endif %}">
+      <span class="icon">🛍️</span> Productos en Venta
+    </a>
+    <a href="{% url 'venta_crear' %}" class="nav-item {% if request.resolver_match.url_name in 'venta_lista,venta_crear,venta_eliminar' %}active{% endif %}">
+      <span class="icon">🏷️</span> Registrar Venta
+    </a>
+    <a href="{% url 'entrada_lista' %}" class="nav-item {% if 'entrada' in request.resolver_match.url_name %}active{% endif %}">
+      <span class="icon">📥</span> Entradas de Tienda
+    </a>
+  </nav>
+</aside>
+
+<!-- ══ MAIN ════════════════════════════════════════════= -->
+<main class="main">
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags }}{% endif %}">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ══ HELP BUTTON ══════════════════════════════════════ -->
+<button class="help-btn" id="helpBtn" title="Guía de esta sección">?</button>
+
+<div class="help-overlay" id="helpOverlay"></div>
+
+<div class="help-panel" id="helpPanel">
+  <div class="help-header">
+    <button class="help-close-btn" id="helpClose">✕</button>
+    <h2>📖 Guía del Sistema</h2>
+    <p>CarWash Pro — Cómo funciona cada sección</p>
+  </div>
+  <div class="help-body">
+
+    <div class="help-section">
+      <div class="help-section-header">⚡ Dashboard</div>
+      <div class="help-section-body">
+        Panel principal con resumen de todo el negocio. Muestra <strong>ingresos, ganancias, número de servicios</strong> y ventas de tienda.<br><br>
+        <strong>Selector de período:</strong> cambia entre Día, Semana, Mes, Semestre o Año. Usa el campo de fecha para ir a períodos anteriores.<br><br>
+        Las gráficas se actualizan automáticamente al cambiar el período.
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-header">🚿 Registrar Servicio</div>
+      <div class="help-section-body">
+        Aquí registras <strong>cada lavado que realizas en el día</strong>. Selecciona el tipo de servicio y el tipo de vehículo.<br><br>
+        El sistema <strong>calcula el precio sugerido automáticamente</strong> (precio base × multiplicador del vehículo). Puedes ajustarlo si cobras diferente.<br><br>
+        Al guardar, el sistema descuenta los insumos del inventario y registra el <strong>costo real de los productos usados</strong>.
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-header">📋 Tipos de Servicio</div>
+      <div class="help-section-body">
+        Define los servicios que ofreces: Express, Completo, Motor, Vestiduras, etc.<br><br>
+        Cada servicio tiene un <strong>precio base</strong>. El precio final depende también del tipo de vehículo.
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-header">🏎️ Tipos de Vehículo</div>
+      <div class="help-section-body">
+        Define los tipos de vehículo con su <strong>multiplicador de precio</strong>.<br><br>
+        Ejemplo: si el lavado Express cuesta $80 y la camioneta tiene multiplicador 1.5, el precio sería <strong>$80 × 1.5 = $120</strong>.
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-header">🔗 Insumos por Servicio</div>
+      <div class="help-section-body">
+        Aquí defines <strong>cuánto de cada producto se usa en cada tipo de lavado</strong>.<br><br>
+        Ejemplo: el Lavado Express usa 0.1 litros de shampoo. Con 10 litros en stock puedes hacer <strong>100 lavados</strong>.<br><br>
+        Esta configuración es clave para que el sistema calcule automáticamente el <strong>costo de insumos por servicio</strong>.
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-header">🧴 Insumos (Inventario)</div>
+      <div class="help-section-body">
+        Lista de todos los productos que usas para lavar autos: shampoos, ceras, desengrasantes, etc.<br><br>
+        Puedes ver el <strong>stock actual</strong> y cuántos servicios puedes hacer con lo que tienes.<br><br>
+        Si el stock baja del mínimo que definas, aparece una <strong>alerta en el Dashboard</strong>.
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-header">🛒 Compras / Entradas de Insumos</div>
+      <div class="help-section-body">
+        Registra cada vez que <strong>compras insumos</strong> de trabajo (shampoo, ceras, etc.).<br><br>
+        Al guardar, el stock del insumo se actualiza automáticamente sumando la cantidad comprada.
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-header">🏭 Proveedores</div>
+      <div class="help-section-body">
+        Directorio de tus <strong>proveedores de insumos y mercancía</strong>. Guarda nombre, teléfono, contacto y email.<br><br>
+        Al registrar compras o entradas, puedes vincularlas a un proveedor para tener historial.
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-header">🛍️ Tienda — Productos en Venta</div>
+      <div class="help-section-body">
+        Inventario de <strong>mercancía que vendes por separado</strong>: aromatizantes, microfibras, accesorios, etc.<br><br>
+        Cada producto tiene <strong>precio de compra y precio de venta</strong>. El sistema calcula el margen de ganancia automáticamente.<br><br>
+        Puedes ver el valor total de tu inventario en la sección principal de tienda.
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-header">🏷️ Registrar Venta (Tienda)</div>
+      <div class="help-section-body">
+        Registra la <strong>venta de un producto de la tienda</strong>. El sistema pre-llena el precio de venta sugerido.<br><br>
+        Al guardar, el stock se descuenta y se registra la <strong>ganancia exacta</strong> (precio venta − precio compra × cantidad).
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-header">📥 Entradas de Tienda</div>
+      <div class="help-section-body">
+        Registra cuando <strong>recibes mercancía nueva para la tienda</strong>. Al guardar, el stock del producto aumenta y se actualiza el precio de compra más reciente.
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-header">👤 Clientes y Vehículos</div>
+      <div class="help-section-body">
+        Directorio de clientes con su información de contacto y los vehículos registrados.<br><br>
+        <strong>Por cada cliente puedes registrar:</strong>
+        <ul>
+          <li>Nombre y WhatsApp (con botón directo a chat)</li>
+          <li>Uno o varios vehículos con placa, marca, modelo, año, color y tipo</li>
+        </ul>
+        Al <strong>registrar un servicio</strong>, puedes seleccionar el cliente y su vehículo — la placa y el tipo se autocompletan automáticamente.<br><br>
+        En el <strong>perfil del cliente</strong> puedes ver todo su historial de servicios y cuánto ha gastado en total.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="{% static 'js/chart.umd.min.js' %}"></script>
+<script>
+  const helpBtn     = document.getElementById('helpBtn');
+  const helpPanel   = document.getElementById('helpPanel');
+  const helpOverlay = document.getElementById('helpOverlay');
+  const helpClose   = document.getElementById('helpClose');
+
+  function openHelp()  { helpPanel.classList.add('open'); helpOverlay.classList.add('open'); }
+  function closeHelp() { helpPanel.classList.remove('open'); helpOverlay.classList.remove('open'); }
+
+  helpBtn.addEventListener('click', openHelp);
+  helpClose.addEventListener('click', closeHelp);
+  helpOverlay.addEventListener('click', closeHelp);
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

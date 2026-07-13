@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">👤 {{ titulo }}</div>
+    <div class="page-subtitle">Los vehículos se agregan desde el perfil del cliente</div>
+  </div>
+  <a href="{% url 'cliente_lista' %}" class="btn btn-outline">← Volver</a>
+</div>
+
+<div class="card" style="max-width:600px;">
+  <form method="post">
+    {% csrf_token %}
+    <div>
+      <label class="form-label">Nombre completo *</label>
+      {{ form.nombre }}
+    </div>
+    <div class="grid-2 mt-2">
+      <div>
+        <label class="form-label">WhatsApp</label>
+        {{ form.whatsapp }}
+        <div class="text-muted mt-1" style="font-size:.75rem;">Incluye lada, ej: 444 123 4567</div>
+      </div>
+      <div>
+        <label class="form-label">Email</label>
+        {{ form.email }}
+      </div>
+    </div>
+    <div class="mt-2">
+      <label class="form-label">Notas / Observaciones</label>
+      {{ form.notas }}
+    </div>
+    <div class="mt-3 d-flex gap-1">
+      <button type="submit" class="btn btn-primary">💾 Guardar Cliente</button>
+      <a href="{% url 'cliente_lista' %}" class="btn btn-outline">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

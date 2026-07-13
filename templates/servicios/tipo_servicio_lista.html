@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Tipos de Servicio{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">📋 Tipos de Servicio</div>
+    <div class="page-subtitle">Define los servicios que ofrece tu autolavado</div>
+  </div>
+  <a href="{% url 'tipo_servicio_crear' %}" class="btn btn-primary">+ Nuevo Tipo</a>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Servicio</th>
+          <th>Descripción</th>
+          <th>Precio Base</th>
+          <th>Insumos Requeridos</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tipos %}
+        <tr>
+          <td class="fw-bold">{{ t.nombre }}</td>
+          <td class="text-muted" style="font-size:.85rem;">{{ t.descripcion|default:"—"|truncatechars:60 }}</td>
+          <td class="text-green fw-bold">${{ t.precio_base }}</td>
+          <td>
+            {% for ir in t.insumos_requeridos.all %}
+              <span class="badge badge-cyan" style="margin:2px;">{{ ir.insumo.nombre }} ×{{ ir.cantidad_por_servicio }}</span>
+            {% empty %}
+              <span class="text-muted" style="font-size:.8rem;">Sin insumos asignados</span>
+            {% endfor %}
+          </td>
+          <td>
+            {% if t.activo %}
+              <span class="badge badge-green"><span class="glow-dot" style="width:6px;height:6px;margin-right:4px;display:inline-block;"></span> Activo</span>
+            {% else %}
+              <span class="badge badge-gray">Inactivo</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'tipo_servicio_editar' t.pk %}" class="btn btn-outline btn-sm">Editar</a>
+              <a href="{% url 'tipo_servicio_eliminar' t.pk %}" class="btn btn-danger btn-sm">✕</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted);">
+            No hay tipos de servicio. <a href="{% url 'tipo_servicio_crear' %}" class="text-cyan">Crea uno ahora.</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

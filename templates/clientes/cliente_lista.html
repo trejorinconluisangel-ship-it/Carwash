@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Clientes{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">👤 Clientes</div>
+    <div class="page-subtitle">Registro de clientes y sus vehículos</div>
+  </div>
+  <a href="{% url 'cliente_crear' %}" class="btn btn-primary">+ Nuevo Cliente</a>
+</div>
+
+<!-- Buscador -->
+<form method="get" class="mb-3" style="display:flex; gap:10px; max-width:460px;">
+  <input type="text" name="q" value="{{ q }}" class="form-control"
+         placeholder="Buscar por nombre o WhatsApp..." autocomplete="off">
+  <button class="btn btn-outline" type="submit" style="white-space:nowrap;">🔍 Buscar</button>
+  {% if q %}<a href="{% url 'cliente_lista' %}" class="btn btn-outline">✕</a>{% endif %}
+</form>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>WhatsApp</th>
+          <th>Vehículos</th>
+          <th>Servicios</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in clientes %}
+        <tr>
+          <td>
+            <a href="{% url 'cliente_detalle' c.pk %}" class="fw-bold text-cyan">{{ c.nombre }}</a>
+            {% if c.notas %}<div class="text-muted" style="font-size:.75rem;">{{ c.notas|truncatechars:50 }}</div>{% endif %}
+          </td>
+          <td>
+            {% if c.whatsapp %}
+              <a href="{{ c.whatsapp_url }}" target="_blank"
+                 class="btn btn-outline btn-sm" style="border-color:rgba(0,255,136,0.4); color:var(--green);">
+                📱 {{ c.whatsapp }}
+              </a>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% for v in c.vehiculos.all %}
+              <span class="badge badge-purple" style="margin:2px;">{{ v.placa }}</span>
+            {% empty %}
+              <span class="text-muted" style="font-size:.8rem;">Sin vehículos</span>
+            {% endfor %}
+          </td>
+          <td>
+            <span class="badge badge-cyan">{{ c.total_servicios }} servicios</span>
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'cliente_detalle' c.pk %}" class="btn btn-outline btn-sm">Ver</a>
+              <a href="{% url 'cliente_editar' c.pk %}" class="btn btn-outline btn-sm">Editar</a>
+              <a href="{% url 'cliente_eliminar' c.pk %}" class="btn btn-danger btn-sm">✕</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" style="text-align:center; padding:40px; color:var(--text-muted);">
+            {% if q %}No se encontraron clientes con "{{ q }}".{% else %}Sin clientes registrados.{% endif %}
+            <a href="{% url 'cliente_crear' %}" class="text-cyan">Agrega el primero.</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

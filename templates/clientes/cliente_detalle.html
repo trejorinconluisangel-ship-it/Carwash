@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}{{ cliente.nombre }}{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">👤 {{ cliente.nombre }}</div>
+    <div class="page-subtitle">Perfil del cliente · {{ vehiculos.count }} vehículo{{ vehiculos.count|pluralize }}</div>
+  </div>
+  <div class="d-flex gap-1">
+    {% if cliente.whatsapp %}
+      <a href="{{ cliente.whatsapp_url }}" target="_blank"
+         class="btn btn-sm" style="background:rgba(0,255,136,0.15);color:var(--green);border:1px solid rgba(0,255,136,0.35);">
+        💬 WhatsApp
+      </a>
+    {% endif %}
+    <a href="{% url 'vehiculo_crear' cliente.pk %}" class="btn btn-primary btn-sm">+ Agregar Vehículo</a>
+    <a href="{% url 'cliente_editar' cliente.pk %}" class="btn btn-outline btn-sm">Editar</a>
+    <a href="{% url 'cliente_lista' %}" class="btn btn-outline btn-sm">← Volver</a>
+  </div>
+</div>
+
+<div class="grid-2 mb-3" style="align-items:start;">
+
+  <!-- Info del cliente -->
+  <div>
+    <div class="card card-cyan mb-3">
+      <div class="chart-title">📋 Información del Cliente</div>
+      <div style="display:grid; gap:10px;">
+        {% if cliente.whatsapp %}
+        <div>
+          <div class="text-muted" style="font-size:.72rem; text-transform:uppercase; letter-spacing:1px;">WhatsApp</div>
+          <div class="fw-bold">
+            <a href="{{ cliente.whatsapp_url }}" target="_blank" class="text-green">📱 {{ cliente.whatsapp }}</a>
+          </div>
+        </div>
+        {% endif %}
+        {% if cliente.email %}
+        <div>
+          <div class="text-muted" style="font-size:.72rem; text-transform:uppercase; letter-spacing:1px;">Email</div>
+          <div><a href="mailto:{{ cliente.email }}" class="text-cyan">{{ cliente.email }}</a></div>
+        </div>
+        {% endif %}
+        {% if cliente.notas %}
+        <div>
+          <div class="text-muted" style="font-size:.72rem; text-transform:uppercase; letter-spacing:1px;">Notas</div>
+          <div class="text-muted" style="font-size:.85rem;">{{ cliente.notas }}</div>
+        </div>
+        {% endif %}
+        <div>
+          <div class="text-muted" style="font-size:.72rem; text-transform:uppercase; letter-spacing:1px;">Cliente desde</div>
+          <div class="text-muted" style="font-size:.85rem;">{{ cliente.created_at|date:"d/m/Y" }}</div>
+        </div>
+      </div>
+      <div class="neon-line"></div>
+      <div class="d-flex gap-2">
+        <div style="text-align:center; flex:1; padding:10px; background:rgba(0,212,255,0.06); border-radius:8px;">
+          <div class="kpi-label">Servicios</div>
+          <div class="text-cyan fw-bold" style="font-size:1.5rem;">{{ total_servicios }}</div>
+        </div>
+        <div style="text-align:center; flex:1; padding:10px; background:rgba(0,255,136,0.06); border-radius:8px;">
+          <div class="kpi-label">Total Gastado</div>
+          <div class="text-green fw-bold" style="font-size:1.5rem;">${{ total_gastado|floatformat:0 }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vehículos -->
+    <div class="card card-purple">
+      <div class="d-flex justify-between align-center mb-2">
+        <div class="chart-title mb-0">🚗 Vehículos Registrados</div>
+        <a href="{% url 'vehiculo_crear' cliente.pk %}" class="btn btn-primary btn-sm">+ Agregar</a>
+      </div>
+      {% for v in vehiculos %}
+      <div style="padding:14px; margin-bottom:10px; background:rgba(168,85,247,0.07); border:1px solid rgba(168,85,247,0.2); border-radius:10px; position:relative;">
+        <!-- Placa destacada -->
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div style="background:rgba(0,212,255,0.12); border:2px solid rgba(0,212,255,0.3); border-radius:8px; padding:4px 14px; font-size:1rem; font-weight:800; color:var(--cyan); letter-spacing:3px; font-family:monospace;">
+            {{ v.placa|upper }}
+          </div>
+          <div class="d-flex gap-1">
+            <a href="{% url 'vehiculo_editar' v.pk %}" class="btn btn-outline btn-sm">Editar</a>
+            <a href="{% url 'vehiculo_eliminar' v.pk %}" class="btn btn-danger btn-sm">✕</a>
+          </div>
+        </div>
+        <div style="font-size:.88rem; color:var(--text);">
+          <strong>{{ v.marca }}</strong>{% if v.modelo %} {{ v.modelo }}{% endif %}{% if v.anio %} {{ v.anio }}{% endif %}
+        </div>
+        <div style="font-size:.8rem; color:var(--text-muted); margin-top:3px;">
+          {{ v.get_color_display }} · {{ v.get_tipo_display }}
+          {% if v.notas %} · {{ v.notas|truncatechars:40 }}{% endif %}
+        </div>
+        <div class="mt-1">
+          <span class="badge badge-cyan">{{ v.servicios.count }} servicios</span>
+        </div>
+      </div>
+      {% empty %}
+      <div class="text-muted" style="text-align:center; padding:20px; font-size:.85rem;">
+        Sin vehículos registrados.<br>
+        <a href="{% url 'vehiculo_crear' cliente.pk %}" class="text-cyan">Agregar ahora</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Historial de servicios -->
+  <div class="card">
+    <div class="chart-title">🕒 Historial de Servicios</div>
+    {% if servicios %}
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Fecha</th><th>Servicio</th><th>Vehículo</th><th>Precio</th><th>Ganancia</th></tr>
+        </thead>
+        <tbody>
+          {% for s in servicios %}
+          <tr>
+            <td class="text-muted" style="white-space:nowrap;">{{ s.fecha|date:"d/m/Y" }}</td>
+            <td><span class="badge badge-cyan" style="font-size:.7rem;">{{ s.tipo_servicio }}</span></td>
+            <td>
+              {% if s.vehiculo %}
+                <span style="font-family:monospace; color:var(--purple); font-weight:700; font-size:.85rem;">{{ s.vehiculo.placa|upper }}</span>
+              {% else %}
+                <span class="text-muted" style="font-size:.8rem;">{{ s.tipo_vehiculo }}</span>
+              {% endif %}
+            </td>
+            <td class="text-cyan fw-bold">${{ s.precio_cobrado }}</td>
+            <td class="text-green" style="font-size:.85rem;">${{ s.ganancia|floatformat:0 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-muted" style="text-align:center; padding:30px; font-size:.85rem;">
+      Este cliente no tiene servicios registrados todavía.<br>
+      <a href="{% url 'servicio_crear' %}" class="text-cyan">Registrar un servicio</a>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

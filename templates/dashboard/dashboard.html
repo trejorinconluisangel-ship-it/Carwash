@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- ── Topbar ─────────────────────────────────────────── -->
+<div class="topbar">
+  <div>
+    <div class="page-title">⚡ Dashboard General</div>
+    <div class="page-subtitle">
+      {{ inicio|date:"d M Y" }} — {{ fin|date:"d M Y" }}
+      &nbsp;·&nbsp; <span class="glow-dot"></span> Sistema activo
+    </div>
+  </div>
+  <a href="{% url 'servicio_crear' %}" class="btn btn-primary">+ Nuevo Servicio</a>
+</div>
+
+<!-- ── Selector de periodo ────────────────────────────── -->
+<div class="card mb-3" style="padding:14px 20px;">
+  <form method="get" style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+    <div class="period-selector">
+      {% for p, label in periodo_opciones.items %}
+        <button type="submit" name="periodo" value="{{ p }}"
+                class="period-btn {% if periodo == p %}active{% endif %}">
+          {{ label }}
+        </button>
+      {% endfor %}
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
+      <label class="form-label mb-0 text-muted" style="white-space:nowrap; font-size:.75rem;">Fecha ref.:</label>
+      <input type="date" name="fecha" value="{{ fecha_sel }}" class="form-control" style="width:155px;" onchange="this.form.submit()">
+    </div>
+  </form>
+</div>
+
+<!-- ── KPIs Combinados ────────────────────────────────── -->
+<div style="display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:20px;">
+  <div class="kpi-card cyan">
+    <div class="kpi-icon" style="color:var(--cyan)">💰</div>
+    <div class="kpi-label">Ingresos Totales</div>
+    <div class="kpi-value">${{ ingresos_totales|floatformat:2 }}</div>
+    <div class="text-muted mt-1" style="font-size:.72rem;">Lavados + Tienda</div>
+  </div>
+  <div class="kpi-card green">
+    <div class="kpi-icon" style="color:var(--green)">📈</div>
+    <div class="kpi-label">Ganancia Total</div>
+    <div class="kpi-value">${{ ganancia_total|floatformat:2 }}</div>
+    <div class="text-muted mt-1" style="font-size:.72rem;">Combinada</div>
+  </div>
+  <div class="kpi-card purple">
+    <div class="kpi-icon" style="color:var(--purple)">🚿</div>
+    <div class="kpi-label">Servicios</div>
+    <div class="kpi-value">{{ total_servicios }}</div>
+    <div class="text-muted mt-1" style="font-size:.72rem;">Ticket prom. ${{ ticket_promedio }}</div>
+  </div>
+  <div class="kpi-card orange">
+    <div class="kpi-icon" style="color:var(--orange)">🛍️</div>
+    <div class="kpi-label">Ventas Tienda</div>
+    <div class="kpi-value">${{ total_ingresos_tienda|floatformat:0 }}</div>
+    <div class="text-muted mt-1" style="font-size:.72rem;">{{ total_ventas_tienda }} ventas</div>
+  </div>
+  <div class="kpi-card red">
+    <div class="kpi-icon" style="color:var(--red)">🧴</div>
+    <div class="kpi-label">Costo Insumos</div>
+    <div class="kpi-value">${{ total_costo_insumos|floatformat:0 }}</div>
+    <div class="text-muted mt-1" style="font-size:.72rem;">En servicios</div>
+  </div>
+</div>
+
+<!-- ── Gráficas principales ───────────────────────────── -->
+<div class="charts-grid mb-3">
+  <div class="card">
+    <div class="chart-title">📊 Ingresos y Ganancia por Día</div>
+    <canvas id="chartIngresos" height="110"></canvas>
+  </div>
+  <div class="card">
+    <div class="chart-title">🍩 Servicios por Tipo</div>
+    <canvas id="chartTipos" height="220"></canvas>
+  </div>
+</div>
+
+<!-- ── Gráficas secundarias ───────────────────────────── -->
+<div class="grid-2 mb-3">
+  <div class="card">
+    <div class="chart-title">🏎️ Por Tipo de Vehículo</div>
+    <canvas id="chartVehiculos" height="140"></canvas>
+  </div>
+  <div class="card">
+    <div class="chart-title">🛍️ Top Productos Tienda</div>
+    <canvas id="chartProductos" height="140"></canvas>
+  </div>
+</div>
+
+<!-- ── Fila inferior ──────────────────────────────────── -->
+<div class="grid-2 mb-3">
+  <!-- Últimos servicios -->
+  <div class="card">
+    <div class="d-flex justify-between align-center mb-2">
+      <div class="chart-title mb-0">🕒 Últimos Servicios</div>
+      <a href="{% url 'servicio_lista' %}" class="btn btn-outline btn-sm">Ver todos</a>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Fecha</th><th>Servicio</th><th>Vehículo</th><th>Precio</th><th>Costo</th><th>Ganancia</th></tr>
+        </thead>
+        <tbody>
+          {% for s in ultimos_servicios %}
+          <tr>
+            <td class="text-muted">{{ s.fecha|date:"d/m" }}</td>
+            <td><span class="badge badge-cyan">{{ s.tipo_servicio }}</span></td>
+            <td class="text-muted" style="font-size:.8rem;">{{ s.tipo_vehiculo }}</td>
+            <td class="text-cyan fw-bold">${{ s.precio_cobrado }}</td>
+            <td class="text-red" style="font-size:.8rem;">${{ s.costo_insumos }}</td>
+            <td class="text-green fw-bold">${{ s.ganancia|floatformat:2 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-muted" style="text-align:center; padding:20px;">Sin servicios en este período</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Alertas de stock -->
+  <div class="card">
+    <div class="chart-title">⚠️ Alertas de Stock</div>
+
+    {% if insumos_alerta %}
+      <div class="text-muted mb-1" style="font-size:.75rem; text-transform:uppercase; letter-spacing:1px;">Insumos de Lavado</div>
+      {% for i in insumos_alerta %}
+      <div style="padding:8px 0; border-bottom:1px solid var(--border);">
+        <div class="d-flex justify-between align-center">
+          <span style="font-size:.85rem;">{{ i.nombre }}</span>
+          <span class="badge badge-red">Bajo</span>
+        </div>
+        <div class="text-muted" style="font-size:.75rem;">
+          {{ i.stock_actual }} / Mín {{ i.stock_minimo }} {{ i.unidad_medida }}
+        </div>
+      </div>
+      {% endfor %}
+    {% endif %}
+
+    {% if productos_alerta %}
+      <div class="text-muted mt-2 mb-1" style="font-size:.75rem; text-transform:uppercase; letter-spacing:1px;">Productos Tienda</div>
+      {% for p in productos_alerta %}
+      <div style="padding:8px 0; border-bottom:1px solid var(--border);">
+        <div class="d-flex justify-between align-center">
+          <span style="font-size:.85rem;">{{ p.nombre }}</span>
+          <span class="badge badge-orange">Bajo</span>
+        </div>
+        <div class="text-muted" style="font-size:.75rem;">
+          {{ p.stock_actual }} / Mín {{ p.stock_minimo }} {{ p.unidad }}
+        </div>
+      </div>
+      {% endfor %}
+    {% endif %}
+
+    {% if not insumos_alerta and not productos_alerta %}
+      <div style="text-align:center; padding:30px 0; color:var(--green);">
+        <div style="font-size:2rem;">✅</div>
+        <div>Todo el stock en nivel óptimo</div>
+      </div>
+    {% endif %}
+
+    <div class="mt-2 d-flex gap-1">
+      <a href="{% url 'insumo_lista' %}" class="btn btn-outline btn-sm">Insumos</a>
+      <a href="{% url 'producto_lista' %}" class="btn btn-outline btn-sm">Tienda</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CYAN   = '#00d4ff';
+const PURPLE = '#a855f7';
+const GREEN  = '#00ff88';
+const ORANGE = '#ff6b35';
+const RED    = '#ff3d71';
+const YELLOW = '#ffd60a';
+const gridColor = 'rgba(255,255,255,0.05)';
+const textColor = '#64748b';
+
+Chart.defaults.color = textColor;
+Chart.defaults.font.family = 'Inter, sans-serif';
+
+const tooltipBase = {
+  backgroundColor: 'rgba(5,12,24,0.95)',
+  borderColor: CYAN,
+  borderWidth: 1,
+  titleColor: CYAN,
+  bodyColor: '#e2e8f0',
+};
+
+// ── 1. Ingresos + Ganancia por día ─────────────────────
+new Chart(document.getElementById('chartIngresos'), {
+  type: 'line',
+  data: {
+    labels: {{ labels_dia|safe }},
+    datasets: [
+      {
+        label: 'Ingr. Lavados $',
+        data: {{ data_ingresos_serv|safe }},
+        borderColor: CYAN, backgroundColor: 'rgba(0,212,255,0.06)',
+        borderWidth: 2, pointRadius: 3, tension: 0.4, fill: true,
+      },
+      {
+        label: 'Ingr. Tienda $',
+        data: {{ data_ingresos_tienda|safe }},
+        borderColor: ORANGE, backgroundColor: 'rgba(255,107,53,0.06)',
+        borderWidth: 2, pointRadius: 3, tension: 0.4, fill: true,
+      },
+      {
+        label: 'Ganancia $',
+        data: {{ data_ganancia_dia|safe }},
+        borderColor: GREEN, backgroundColor: 'rgba(0,255,136,0.06)',
+        borderWidth: 2, pointRadius: 3, tension: 0.4, fill: true, borderDash: [4,3],
+      },
+      {
+        label: 'N° Servicios',
+        data: {{ data_conteo|safe }},
+        borderColor: PURPLE, backgroundColor: 'rgba(168,85,247,0.05)',
+        borderWidth: 2, pointRadius: 3, tension: 0.4, yAxisID: 'y2',
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { labels: { color: textColor, usePointStyle: true, pointStyleWidth: 10, font: { size: 11 } } },
+      tooltip: { ...tooltipBase }
+    },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
+      y: { grid: { color: gridColor }, ticks: { color: CYAN, callback: v => '$' + v }, position: 'left' },
+      y2: { grid: { display: false }, ticks: { color: PURPLE }, position: 'right' }
+    }
+  }
+});
+
+// ── 2. Donut tipos de servicio ─────────────────────────
+new Chart(document.getElementById('chartTipos'), {
+  type: 'doughnut',
+  data: {
+    labels: {{ labels_tipo|safe }},
+    datasets: [{
+      data: {{ data_tipo_ingresos|safe }},
+      backgroundColor: [CYAN, PURPLE, GREEN, ORANGE, RED, YELLOW, '#06b6d4', '#ec4899'],
+      borderColor: '#050c18', borderWidth: 3, hoverOffset: 8,
+    }]
+  },
+  options: {
+    responsive: true, cutout: '65%',
+    plugins: {
+      legend: { position: 'bottom', labels: { color: textColor, padding: 10, usePointStyle: true, font: { size: 11 } } },
+      tooltip: { ...tooltipBase, callbacks: { label: ctx => ` $${ctx.parsed.toFixed(2)}` } }
+    }
+  }
+});
+
+// ── 3. Barras por vehículo ─────────────────────────────
+new Chart(document.getElementById('chartVehiculos'), {
+  type: 'bar',
+  data: {
+    labels: {{ labels_vehiculo|safe }},
+    datasets: [
+      {
+        label: 'Servicios',
+        data: {{ data_vehiculo_count|safe }},
+        backgroundColor: 'rgba(168,85,247,0.7)', borderColor: PURPLE,
+        borderWidth: 1, borderRadius: 6,
+      },
+      {
+        label: 'Ingresos $',
+        data: {{ data_vehiculo_ingresos|safe }},
+        backgroundColor: 'rgba(0,212,255,0.7)', borderColor: CYAN,
+        borderWidth: 1, borderRadius: 6, yAxisID: 'y2',
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { labels: { color: textColor, usePointStyle: true, font: { size: 11 } } },
+      tooltip: { ...tooltipBase, borderColor: PURPLE, titleColor: PURPLE }
+    },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
+      y: { grid: { color: gridColor }, ticks: { color: PURPLE }, position: 'left' },
+      y2: { grid: { display: false }, ticks: { color: CYAN, callback: v => '$' + v }, position: 'right' }
+    }
+  }
+});
+
+// ── 4. Top productos tienda ────────────────────────────
+new Chart(document.getElementById('chartProductos'), {
+  type: 'bar',
+  data: {
+    labels: {{ labels_productos|safe }},
+    datasets: [
+      {
+        label: 'Ingreso $',
+        data: {{ data_prod_ingresos|safe }},
+        backgroundColor: 'rgba(255,107,53,0.7)', borderColor: ORANGE,
+        borderWidth: 1, borderRadius: 6,
+      },
+      {
+        label: 'Ganancia $',
+        data: {{ data_prod_ganancia|safe }},
+        backgroundColor: 'rgba(0,255,136,0.7)', borderColor: GREEN,
+        borderWidth: 1, borderRadius: 6,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { labels: { color: textColor, usePointStyle: true, font: { size: 11 } } },
+      tooltip: { ...tooltipBase, borderColor: ORANGE, titleColor: ORANGE, callbacks: { label: ctx => ` $${ctx.parsed.toFixed(2)}` } }
+    },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
+      y: { grid: { color: gridColor }, ticks: { color: ORANGE, callback: v => '$' + v } }
+    }
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Tipos de Vehículo{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🏎️ Tipos de Vehículo</div>
+    <div class="page-subtitle">Define los vehículos y su multiplicador de precio</div>
+  </div>
+  <a href="{% url 'tipo_vehiculo_crear' %}" class="btn btn-primary">+ Nuevo Vehículo</a>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Vehículo</th>
+          <th>Multiplicador</th>
+          <th>Ejemplo: Precio Base $100</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tipos %}
+        <tr>
+          <td class="fw-bold">{{ t.nombre }}</td>
+          <td><span class="badge badge-purple">×{{ t.multiplicador_precio }}</span></td>
+          <td class="text-green">${{ 100|floatformat:0 }} × {{ t.multiplicador_precio }} = <strong>${{ t.multiplicador_precio|floatformat:0 }}0</strong></td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'tipo_vehiculo_editar' t.pk %}" class="btn btn-outline btn-sm">Editar</a>
+              <a href="{% url 'tipo_vehiculo_eliminar' t.pk %}" class="btn btn-danger btn-sm">✕</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" style="text-align:center; padding:40px; color:var(--text-muted);">
+            No hay tipos de vehículo. <a href="{% url 'tipo_vehiculo_crear' %}" class="text-cyan">Crea uno ahora.</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

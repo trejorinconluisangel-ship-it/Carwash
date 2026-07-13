@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}{{ insumo.nombre }}{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🧴 {{ insumo.nombre }}</div>
+    <div class="page-subtitle">{{ insumo.get_categoria_display }} · {{ insumo.get_unidad_medida_display }}</div>
+  </div>
+  <div class="d-flex gap-1">
+    <a href="{% url 'insumo_editar' insumo.pk %}" class="btn btn-outline">Editar</a>
+    <a href="{% url 'insumo_lista' %}" class="btn btn-outline">← Volver</a>
+  </div>
+</div>
+
+<div class="grid-2 mb-3">
+  <!-- Info principal -->
+  <div class="card card-cyan">
+    <div class="chart-title">📦 Stock e Información</div>
+    <div class="kpi-grid" style="grid-template-columns:1fr 1fr; margin-bottom:0;">
+      <div class="kpi-card cyan">
+        <div class="kpi-label">Stock Actual</div>
+        <div class="kpi-value {% if insumo.stock_bajo %}text-red{% endif %}">
+          {{ insumo.stock_actual }}
+        </div>
+        <div class="text-muted" style="font-size:.8rem;">{{ insumo.get_unidad_medida_display }}</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">Costo Unitario</div>
+        <div class="kpi-value text-orange">${{ insumo.costo_unitario }}</div>
+      </div>
+    </div>
+
+    <div class="neon-line"></div>
+
+    {% if insumo.proveedor %}
+    <div>
+      <div class="text-muted" style="font-size:.75rem; text-transform:uppercase; letter-spacing:1px;">Proveedor</div>
+      <div class="fw-bold mt-1">{{ insumo.proveedor.nombre }}</div>
+      {% if insumo.proveedor.telefono %}
+      <div class="text-muted" style="font-size:.85rem;">📞 <a href="tel:{{ insumo.proveedor.telefono }}" class="text-cyan">{{ insumo.proveedor.telefono }}</a></div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if insumo.stock_bajo %}
+    <div class="alert alert-danger mt-2">
+      ⚠️ Stock bajo el mínimo definido ({{ insumo.stock_minimo }} {{ insumo.unidad_medida }})
+    </div>
+    {% endif %}
+
+    <div class="mt-2">
+      <a href="{% url 'compra_crear' %}?insumo={{ insumo.pk }}" class="btn btn-green btn-sm">+ Registrar Compra</a>
+    </div>
+  </div>
+
+  <!-- Servicios posibles -->
+  <div class="card card-purple">
+    <div class="chart-title">🔢 Servicios Posibles con Stock Actual</div>
+    {% if servicios_posibles %}
+      {% for sp in servicios_posibles %}
+      <div style="padding:10px 0; border-bottom:1px solid var(--border);">
+        <div class="d-flex justify-between align-center">
+          <span class="fw-bold">{{ sp.tipo_servicio }}</span>
+          <span class="badge badge-purple">{{ sp.posibles }} servicios</span>
+        </div>
+        <div class="text-muted" style="font-size:.8rem;">
+          Usa {{ sp.uso_por_servicio }} {{ insumo.unidad_medida }} por servicio
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-muted" style="text-align:center; padding:20px;">
+        Este insumo no está asignado a ningún tipo de servicio aún.<br>
+        <a href="{% url 'insumo_servicio_crear' %}" class="text-cyan">Asignar ahora</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Historial de compras -->
+<div class="card">
+  <div class="d-flex justify-between align-center mb-2">
+    <div class="chart-title mb-0">🛒 Últimas Compras</div>
+    <a href="{% url 'compra_crear' %}" class="btn btn-green btn-sm">+ Nueva Compra</a>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Fecha</th><th>Cantidad</th><th>Costo Unit.</th><th>Total</th><th>Proveedor</th><th>Notas</th></tr>
+      </thead>
+      <tbody>
+        {% for c in compras %}
+        <tr>
+          <td class="text-muted">{{ c.fecha|date:"d/m/Y" }}</td>
+          <td class="text-cyan fw-bold">{{ c.cantidad }} {{ insumo.unidad_medida }}</td>
+          <td>${{ c.costo_unitario }}</td>
+          <td class="text-green fw-bold">${{ c.costo_total }}</td>
+          <td class="text-muted">{{ c.proveedor|default:"—" }}</td>
+          <td class="text-muted">{{ c.notas|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-muted" style="text-align:center; padding:20px;">Sin compras registradas</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

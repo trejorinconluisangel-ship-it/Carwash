@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% block title %}Registrar Servicio{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🚿 {{ titulo }}</div>
+    <div class="page-subtitle">El stock de insumos se descuenta automáticamente al guardar</div>
+  </div>
+  <a href="{% url 'servicio_lista' %}" class="btn btn-outline">← Volver</a>
+</div>
+
+<form method="post" id="servicioForm">
+{% csrf_token %}
+<div style="display:grid; grid-template-columns:1fr 360px; gap:20px; align-items:start;">
+
+  <!-- ── Columna izquierda: datos del servicio ─────── -->
+  <div style="display:flex; flex-direction:column; gap:16px;">
+
+    <!-- Sección: ¿Es cliente registrado? -->
+    <div class="card card-purple">
+      <div class="chart-title">👤 Cliente (opcional)</div>
+      <div class="grid-2">
+        <div>
+          <label class="form-label">Cliente registrado</label>
+          {{ form.cliente }}
+          <div class="text-muted mt-1" style="font-size:.75rem;">Deja en blanco si es cliente nuevo o espontáneo</div>
+        </div>
+        <div>
+          <label class="form-label">Vehículo del cliente</label>
+          {{ form.vehiculo }}
+          <div class="text-muted mt-1" style="font-size:.75rem;">Se carga automáticamente al seleccionar cliente</div>
+        </div>
+      </div>
+      <div id="cliente_acciones" style="display:none; margin-top:10px;">
+        <a id="link_nuevo_vehiculo" href="{% url 'cliente_crear' %}" target="_blank"
+           class="btn btn-outline btn-sm">+ Agregar vehículo a este cliente</a>
+        <a id="link_ver_cliente" href="#" target="_blank"
+           class="btn btn-outline btn-sm" style="margin-left:6px;">Ver perfil</a>
+      </div>
+    </div>
+
+    <!-- Sección: Tipo de servicio y vehículo -->
+    <div class="card">
+      <div class="chart-title">🚿 Tipo de Servicio y Vehículo</div>
+      <div class="grid-2">
+        <div>
+          <label class="form-label">Tipo de servicio *</label>
+          {{ form.tipo_servicio }}
+        </div>
+        <div>
+          <label class="form-label">Tipo de vehículo *</label>
+          {{ form.tipo_vehiculo }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección: Fecha y precio -->
+    <div class="card">
+      <div class="chart-title">💰 Precio y Fecha</div>
+      <div class="grid-3">
+        <div>
+          <label class="form-label">Fecha *</label>
+          {{ form.fecha }}
+        </div>
+        <div>
+          <label class="form-label">Hora</label>
+          {{ form.hora }}
+        </div>
+        <div>
+          <label class="form-label">Precio cobrado ($) *</label>
+          {{ form.precio_cobrado }}
+        </div>
+      </div>
+      <div class="mt-2">
+        <label class="form-label">Notas</label>
+        {{ form.notas }}
+      </div>
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:13px;">
+          ✅ Registrar Servicio
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Columna derecha: panel de info ───────────── -->
+  <div style="display:flex; flex-direction:column; gap:14px;">
+
+    <!-- Precio sugerido -->
+    <div class="card card-purple">
+      <div class="chart-title">💰 Precio Sugerido</div>
+      <div id="precio_display" style="font-size:2.8rem; font-weight:800; color:var(--green); text-shadow:0 0 20px rgba(0,255,136,0.5); line-height:1;">
+        $0.00
+      </div>
+      <div class="text-muted mt-1" style="font-size:.78rem;">Precio base × multiplicador vehículo</div>
+    </div>
+
+    <!-- Vehículo seleccionado (resumen) -->
+    <div class="card card-cyan" id="panel_vehiculo_cliente" style="display:none;">
+      <div class="chart-title">🚗 Vehículo Seleccionado</div>
+      <div id="vehiculo_info" style="font-size:.88rem; color:var(--text); line-height:1.8;"></div>
+    </div>
+
+    <!-- Insumos que se usarán -->
+    <div class="card" style="border-color:rgba(168,85,247,0.2);">
+      <div class="chart-title">🧴 Insumos a Descontar</div>
+      <div id="insumos_preview">
+        <div class="text-muted" style="text-align:center; padding:12px; font-size:.82rem;">
+          Selecciona tipo de servicio
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const PRECIOS  = {{ precios_json|safe }};
+const INSUMOS  = {
+  {% for ts in tipos_servicio %}
+  "{{ ts.pk }}": [
+    {% for ir in ts.insumos_requeridos.all %}
+    { nombre: "{{ ir.insumo.nombre }}", cantidad: "{{ ir.cantidad_por_servicio }}", unidad: "{{ ir.insumo.get_unidad_medida_display }}", stock: "{{ ir.insumo.stock_actual }}" },
+    {% endfor %}
+  ],
+  {% endfor %}
+};
+
+// Mapa tipo vehiculo_local (texto) → TipoVehiculo id para auto-completar
+const TIPO_MAP = {
+  'moto':      {% for tv in tipos_vehiculo %}{% if tv.nombre|lower == 'moto' %}'{{ tv.pk }}'{% endif %}{% endfor %},
+  'auto_chico':{% for tv in tipos_vehiculo %}{% if 'pequeño' in tv.nombre|lower or 'chico' in tv.nombre|lower %}'{{ tv.pk }}'{% endif %}{% endfor %},
+  'sedan':     {% for tv in tipos_vehiculo %}{% if 'sedan' in tv.nombre|lower or 'sedán' in tv.nombre|lower %}'{{ tv.pk }}'{% endif %}{% endfor %},
+  'pickup':    {% for tv in tipos_vehiculo %}{% if 'pick' in tv.nombre|lower %}'{{ tv.pk }}'{% endif %}{% endfor %},
+  'camioneta': {% for tv in tipos_vehiculo %}{% if 'camioneta' in tv.nombre|lower or 'suv' in tv.nombre|lower %}'{{ tv.pk }}'{% endif %}{% endfor %},
+  'van':       {% for tv in tipos_vehiculo %}{% if 'van' in tv.nombre|lower %}'{{ tv.pk }}'{% endif %}{% endfor %},
+  'camion':    {% for tv in tipos_vehiculo %}{% if 'camión' in tv.nombre|lower or 'camion' in tv.nombre|lower %}'{{ tv.pk }}'{% endif %}{% endfor %},
+};
+
+const selServicio = document.getElementById('id_tipo_servicio');
+const selVehiculo = document.getElementById('id_tipo_vehiculo');
+const selCliente  = document.getElementById('id_cliente');
+const selVehClte  = document.getElementById('id_vehiculo');
+const precioInput = document.getElementById('id_precio_cobrado');
+const precioDisplay = document.getElementById('precio_display');
+const insumosDiv  = document.getElementById('insumos_preview');
+const panelVeh    = document.getElementById('panel_vehiculo_cliente');
+const vehInfo     = document.getElementById('vehiculo_info');
+const clienteAcciones = document.getElementById('cliente_acciones');
+
+// ── Precio sugerido ────────────────────────────────
+function calcularPrecio() {
+  const tsId = selServicio.value;
+  const tvId = selVehiculo.value;
+  if (tsId && tvId && PRECIOS[tsId]) {
+    const precio = PRECIOS[tsId]['vehiculos'][tvId] || 0;
+    precioDisplay.textContent = '$' + precio.toFixed(2);
+    if (!precioInput.value || precioInput.dataset.autoset === 'true') {
+      precioInput.value = precio;
+      precioInput.dataset.autoset = 'true';
+    }
+  }
+  mostrarInsumos(selServicio.value);
+}
+
+function mostrarInsumos(tsId) {
+  if (!tsId || !INSUMOS[tsId] || !INSUMOS[tsId].length) {
+    insumosDiv.innerHTML = '<div class="text-muted" style="text-align:center;padding:12px;font-size:.82rem;">Sin insumos asignados</div>';
+    return;
+  }
+  let html = '';
+  INSUMOS[tsId].forEach(i => {
+    const posibles = i.cantidad > 0 ? Math.floor(parseFloat(i.stock) / parseFloat(i.cantidad)) : '—';
+    html += `<div style="padding:7px 0; border-bottom:1px solid var(--border);">
+      <div class="d-flex justify-between align-center">
+        <span style="font-size:.83rem;">${i.nombre}</span>
+        <span class="badge badge-purple" style="font-size:.68rem;">${posibles} lavados</span>
+      </div>
+      <div class="text-muted" style="font-size:.75rem;">Usa ${i.cantidad} ${i.unidad} · Stock: ${i.stock}</div>
+    </div>`;
+  });
+  insumosDiv.innerHTML = html;
+}
+
+// ── Cargar vehículos del cliente ───────────────────
+async function cargarVehiculos(clienteId) {
+  // Limpiar opciones
+  selVehClte.innerHTML = '<option value="">— Sin vehículo específico —</option>';
+  panelVeh.style.display = 'none';
+  clienteAcciones.style.display = 'none';
+
+  if (!clienteId) return;
+
+  clienteAcciones.style.display = 'flex';
+  document.getElementById('link_ver_cliente').href = `/clientes/${clienteId}/`;
+  document.getElementById('link_nuevo_vehiculo').href = `/clientes/${clienteId}/vehiculo/nuevo/`;
+
+  try {
+    const resp = await fetch(`/api/vehiculos-cliente/?cliente_pk=${clienteId}`);
+    const data = await resp.json();
+    data.vehiculos.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.pk;
+      opt.textContent = `${v.placa.toUpperCase()} — ${v.marca} ${v.modelo || ''}`.trim();
+      opt.dataset.tipo  = v.tipo;
+      opt.dataset.placa = v.placa;
+      opt.dataset.marca = v.marca;
+      opt.dataset.modelo= v.modelo || '';
+      opt.dataset.color = v.color;
+      selVehClte.appendChild(opt);
+    });
+  } catch(e) { /* noop */ }
+}
+
+function mostrarInfoVehiculo() {
+  const opt = selVehClte.options[selVehClte.selectedIndex];
+  if (!opt || !opt.value) { panelVeh.style.display = 'none'; return; }
+
+  const tipo = opt.dataset.tipo;
+  panelVeh.style.display = 'block';
+  vehInfo.innerHTML = `
+    <div style="font-family:monospace; font-size:1.4rem; font-weight:900; color:var(--cyan); letter-spacing:4px; text-shadow:0 0 10px rgba(0,212,255,0.5);">
+      ${opt.dataset.placa.toUpperCase()}
+    </div>
+    <div><strong>${opt.dataset.marca} ${opt.dataset.modelo}</strong></div>
+  `;
+
+  // Auto-completar tipo de vehículo
+  if (tipo && TIPO_MAP[tipo]) {
+    selVehiculo.value = TIPO_MAP[tipo];
+    calcularPrecio();
+  }
+}
+
+selServicio.addEventListener('change', calcularPrecio);
+selVehiculo.addEventListener('change', calcularPrecio);
+precioInput.addEventListener('input', () => { precioInput.dataset.autoset = 'false'; });
+selCliente.addEventListener('change', () => { cargarVehiculos(selCliente.value); });
+selVehClte.addEventListener('change', mostrarInfoVehiculo);
+
+calcularPrecio();
+if (selCliente.value) cargarVehiculos(selCliente.value);
+</script>
+{% endblock %}

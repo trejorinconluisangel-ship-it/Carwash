@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Ventas de Productos{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🏷️ Ventas de Productos</div>
+    <div class="page-subtitle">Historial de ventas de mercancía</div>
+  </div>
+  <a href="{% url 'venta_crear' %}" class="btn btn-green">+ Registrar Venta</a>
+</div>
+
+<div class="kpi-grid" style="grid-template-columns:repeat(3,1fr); max-width:600px; margin-bottom:24px;">
+  <div class="kpi-card cyan">
+    <div class="kpi-label">Total Ventas</div>
+    <div class="kpi-value">{{ ventas.count }}</div>
+  </div>
+  <div class="kpi-card green">
+    <div class="kpi-label">Ingresos Tienda</div>
+    <div class="kpi-value text-green">${{ total_ventas|floatformat:2 }}</div>
+  </div>
+  <div class="kpi-card purple">
+    <div class="kpi-label">Ganancia Tienda</div>
+    <div class="kpi-value text-purple">${{ total_ganancia|floatformat:2 }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Fecha</th><th>Producto</th><th>Cant.</th><th>Precio Unit.</th><th>Total Venta</th><th>Ganancia</th><th>Notas</th><th>Acción</th></tr>
+      </thead>
+      <tbody>
+        {% for v in ventas %}
+        <tr>
+          <td class="text-muted">{{ v.fecha|date:"d/m/Y" }}</td>
+          <td><a href="{% url 'producto_detalle' v.producto.pk %}" class="text-cyan fw-bold">{{ v.producto.nombre }}</a></td>
+          <td class="text-purple">{{ v.cantidad }} {{ v.producto.unidad }}</td>
+          <td>${{ v.precio_unitario }}</td>
+          <td class="text-cyan fw-bold">${{ v.total_venta }}</td>
+          <td class="text-green fw-bold">${{ v.ganancia|floatformat:2 }}</td>
+          <td class="text-muted" style="font-size:.8rem;">{{ v.notas|default:"—"|truncatechars:30 }}</td>
+          <td><a href="{% url 'venta_eliminar' v.pk %}" class="btn btn-danger btn-sm">✕</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="text-align:center; padding:40px; color:var(--text-muted);">Sin ventas registradas. <a href="{% url 'venta_crear' %}" class="text-cyan">Registrar.</a></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

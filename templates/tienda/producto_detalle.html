@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}{{ producto.nombre }}{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🛍️ {{ producto.nombre }}</div>
+    <div class="page-subtitle">{{ producto.get_categoria_display }} · {{ producto.unidad }}</div>
+  </div>
+  <div class="d-flex gap-1">
+    <a href="{% url 'venta_crear' %}" class="btn btn-green btn-sm">+ Venta</a>
+    <a href="{% url 'entrada_crear' %}" class="btn btn-primary btn-sm">+ Entrada</a>
+    <a href="{% url 'producto_editar' producto.pk %}" class="btn btn-outline btn-sm">Editar</a>
+    <a href="{% url 'producto_lista' %}" class="btn btn-outline btn-sm">← Volver</a>
+  </div>
+</div>
+
+<div class="kpi-grid" style="grid-template-columns:repeat(5,1fr); margin-bottom:24px;">
+  <div class="kpi-card cyan">
+    <div class="kpi-label">Stock Actual</div>
+    <div class="kpi-value {% if producto.stock_bajo %}text-red{% endif %}">{{ producto.stock_actual }}</div>
+    <div class="text-muted" style="font-size:.75rem;">{{ producto.unidad }}</div>
+  </div>
+  <div class="kpi-card red">
+    <div class="kpi-label">Precio Compra</div>
+    <div class="kpi-value text-red">${{ producto.precio_compra }}</div>
+  </div>
+  <div class="kpi-card green">
+    <div class="kpi-label">Precio Venta</div>
+    <div class="kpi-value text-green">${{ producto.precio_venta }}</div>
+  </div>
+  <div class="kpi-card purple">
+    <div class="kpi-label">Ganancia Unit.</div>
+    <div class="kpi-value text-purple">${{ producto.ganancia_unitaria|floatformat:2 }}</div>
+  </div>
+  <div class="kpi-card orange">
+    <div class="kpi-label">Margen</div>
+    <div class="kpi-value text-orange">{{ producto.margen_ganancia }}%</div>
+  </div>
+</div>
+
+<div class="grid-2 mb-3">
+  <div class="card card-green">
+    <div class="chart-title">💰 Resumen de Ventas</div>
+    <div class="grid-2">
+      <div>
+        <div class="text-muted" style="font-size:.75rem; text-transform:uppercase; letter-spacing:1px;">Total Vendido</div>
+        <div class="fw-bold text-cyan" style="font-size:1.5rem;">${{ total_vendido|floatformat:2 }}</div>
+      </div>
+      <div>
+        <div class="text-muted" style="font-size:.75rem; text-transform:uppercase; letter-spacing:1px;">Ganancia Total</div>
+        <div class="fw-bold text-green" style="font-size:1.5rem;">${{ total_ganancia|floatformat:2 }}</div>
+      </div>
+    </div>
+    {% if producto.proveedor %}
+    <div class="neon-line"></div>
+    <div class="text-muted" style="font-size:.8rem;">Proveedor: <strong class="text-cyan">{{ producto.proveedor.nombre }}</strong>
+      {% if producto.proveedor.telefono %} · {{ producto.proveedor.telefono }}{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  <div class="card card-cyan">
+    <div class="chart-title">📦 Info</div>
+    <div class="text-muted" style="font-size:.85rem; line-height:1.7;">
+      {{ producto.descripcion|default:"Sin descripción" }}
+    </div>
+    {% if producto.stock_bajo %}
+    <div class="alert alert-danger mt-2">⚠️ Stock bajo el mínimo ({{ producto.stock_minimo }} {{ producto.unidad }})</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Últimas entradas -->
+  <div class="card">
+    <div class="d-flex justify-between align-center mb-2">
+      <div class="chart-title mb-0">📥 Últimas Entradas</div>
+      <a href="{% url 'entrada_crear' %}" class="btn btn-primary btn-sm">+ Entrada</a>
+    </div>
+    <table>
+      <thead><tr><th>Fecha</th><th>Cantidad</th><th>Costo Unit.</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for e in entradas %}
+        <tr>
+          <td class="text-muted">{{ e.fecha|date:"d/m/Y" }}</td>
+          <td class="text-cyan">+{{ e.cantidad }}</td>
+          <td>${{ e.costo_unitario }}</td>
+          <td class="text-orange fw-bold">${{ e.costo_total }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-muted" style="text-align:center; padding:16px;">Sin entradas</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Últimas ventas -->
+  <div class="card">
+    <div class="d-flex justify-between align-center mb-2">
+      <div class="chart-title mb-0">🏷️ Últimas Ventas</div>
+      <a href="{% url 'venta_crear' %}" class="btn btn-green btn-sm">+ Venta</a>
+    </div>
+    <table>
+      <thead><tr><th>Fecha</th><th>Cant.</th><th>Precio</th><th>Ganancia</th></tr></thead>
+      <tbody>
+        {% for v in ventas %}
+        <tr>
+          <td class="text-muted">{{ v.fecha|date:"d/m/Y" }}</td>
+          <td class="text-purple">{{ v.cantidad }}</td>
+          <td class="text-cyan">${{ v.precio_unitario }}</td>
+          <td class="text-green fw-bold">${{ v.ganancia|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-muted" style="text-align:center; padding:16px;">Sin ventas</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
