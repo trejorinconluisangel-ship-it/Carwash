@@ -168,6 +168,20 @@
     </div>
   </div>
 </div>
+<!-- ── Zona de pruebas ──────────────────────────────────── -->
+<div class="card mt-3" style="border-color:rgba(100,116,139,0.2); padding:16px 20px;">
+  <div class="d-flex align-center justify-between" style="flex-wrap:wrap; gap:12px;">
+    <div>
+      <div style="font-size:.78rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--text-muted); margin-bottom:2px;">Zona de pruebas</div>
+      <div style="font-size:.82rem; color:var(--text-muted);">Carga datos de ejemplo para explorar el sistema, o borra todo para comenzar a usarlo de verdad.</div>
+    </div>
+    <div class="d-flex gap-1" style="flex-shrink:0;">
+      <a href="{% url 'cargar_datos_prueba' %}" class="btn btn-outline btn-sm" style="border-color:rgba(0,212,255,0.3);">🧪 Cargar datos de prueba</a>
+      <a href="{% url 'limpiar_todos_datos' %}" class="btn btn-danger btn-sm">🗑️ Borrar todo</a>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
