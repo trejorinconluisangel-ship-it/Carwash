@@ -85,6 +85,7 @@ body::before {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  padding-top: env(safe-area-inset-top);
 }
 
 .sidebar-logo {
@@ -589,17 +590,29 @@ tbody td {
   .kpi-grid-5 { grid-template-columns: repeat(3, 1fr); }
 }
 
+/* ── Form layout 2 columnas (colapsa en mobile) ───────── */
+.form-layout-2col {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 20px;
+  align-items: start;
+}
+
 /* ── Mobile topbar + hamburger ────────────────────────── */
 .mobile-topbar {
   display: none;
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 56px;
   background: var(--bg-sidebar);
   border-bottom: 1px solid var(--border);
   z-index: 200;
   align-items: center;
-  padding: 0 16px;
+  /* Respeta el notch / Dynamic Island del iPhone */
+  padding-top: env(safe-area-inset-top);
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 0;
+  min-height: calc(56px + env(safe-area-inset-top));
   gap: 14px;
 }
 
@@ -654,9 +667,12 @@ tbody td {
   }
   .sidebar.open { left: 0; }
 
+  .form-layout-2col { grid-template-columns: 1fr; }
+
   .main {
     margin-left: 0;
-    padding: 72px 14px calc(100px + env(safe-area-inset-bottom));
+    /* top: altura topbar + notch del iPhone */
+    padding: calc(72px + env(safe-area-inset-top)) 14px calc(100px + env(safe-area-inset-bottom));
     overflow-x: hidden;
     max-width: 100vw;
   }
