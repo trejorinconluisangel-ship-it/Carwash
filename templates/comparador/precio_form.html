@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🏷️ {{ titulo }}</div>
+    <div class="page-subtitle">{{ producto.nombre }}</div>
+  </div>
+  <a href="{% url 'producto_detalle_comparador' producto.pk %}" class="btn btn-outline">← Volver</a>
+</div>
+
+<div style="max-width:520px;">
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div>
+          <label class="form-label">Proveedor / Tienda *</label>
+          {{ form.proveedor }}
+          <div class="text-muted mt-1" style="font-size:.75rem;">
+            <a href="{% url 'proveedor_crear' %}" class="text-cyan" target="_blank">+ Agregar proveedor nuevo</a>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Precio ($) *</label>
+          {{ form.precio }}
+        </div>
+        <div>
+          <label class="form-label">Fecha de actualización</label>
+          {{ form.fecha_actualizacion }}
+          <div class="text-muted mt-1" style="font-size:.75rem;">¿Cuándo consultaste este precio?</div>
+        </div>
+        <div>
+          <label class="form-label">Notas</label>
+          {{ form.notas }}
+          <div class="text-muted mt-1" style="font-size:.75rem;">Ej: precio con descuento, presentación diferente, solo en oferta…</div>
+        </div>
+        <div class="d-flex gap-1">
+          <a href="{% url 'producto_detalle_comparador' producto.pk %}" class="btn btn-outline">Cancelar</a>
+          <button type="submit" class="btn btn-primary" style="flex:1; justify-content:center;">
+            ✅ Guardar Precio
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

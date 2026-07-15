@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Count, Sum
-from .models import Cliente, Vehiculo
+from .models import Cliente, Vehiculo, VISITAS_PREMIO_PEQUENO, VISITAS_PREMIO_GRANDE
 from .forms import ClienteForm, VehiculoForm, VehiculoSinClienteForm
 
 
@@ -57,6 +57,8 @@ def cliente_detalle(request, pk):
         'vehiculos': vehiculos,
         'servicios': servicios,
         'total_gastado': total_gastado,
+        'meta_pequeno': VISITAS_PREMIO_PEQUENO,
+        'meta_grande': VISITAS_PREMIO_GRANDE,
     })
 
 
@@ -96,6 +98,45 @@ def vehiculo_eliminar(request, pk):
         messages.success(request, 'Vehículo eliminado.')
         return redirect('cliente_detalle', pk=cliente_pk)
     return render(request, 'clientes/confirmar_eliminar.html', {'obj': obj, 'tipo': 'vehículo'})
+
+
+# ── Lealtad ──────────────────────────────────────────────────────────────────
+
+def premio_pequeno(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    return render(request, 'clientes/premio_pequeno.html', {
+        'cliente': cliente,
+        'meta_pequeno': VISITAS_PREMIO_PEQUENO,
+        'meta_grande': VISITAS_PREMIO_GRANDE,
+    })
+
+
+def premio_grande(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    return render(request, 'clientes/premio_grande.html', {
+        'cliente': cliente,
+        'meta_grande': VISITAS_PREMIO_GRANDE,
+    })
+
+
+def canjear_premio_grande(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    if request.method == 'POST':
+        from django.utils import timezone
+        cliente.visitas_lealtad = 0
+        cliente.fecha_ultimo_premio = timezone.now().date()
+        cliente.save(update_fields=['visitas_lealtad', 'fecha_ultimo_premio'])
+        messages.success(request, f'Premio grande canjeado para {cliente.nombre}. Contador reiniciado a 0.')
+    return redirect('servicio_lista')
+
+
+def reiniciar_lealtad(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    if request.method == 'POST':
+        cliente.visitas_lealtad = 0
+        cliente.save(update_fields=['visitas_lealtad'])
+        messages.success(request, f'Contador de lealtad reiniciado para {cliente.nombre}.')
+    return redirect('cliente_detalle', pk=pk)
 
 
 # ── API para JS en el form de servicio ───────────────────────────────────────

@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from .models import TipoServicio, TipoVehiculo, InsumoEnServicio, Servicio
 from .forms import TipoServicioForm, TipoVehiculoForm, InsumoEnServicioForm, ServicioForm
+from clientes.models import VISITAS_PREMIO_PEQUENO, VISITAS_PREMIO_GRANDE
 
 
 # ── Tipos de Servicio ────────────────────────────────────────────────────────
@@ -121,8 +122,18 @@ def servicio_crear(request):
 
     form = ServicioForm(request.POST or None)
     if form.is_valid():
-        form.save()
+        servicio = form.save()
         messages.success(request, 'Servicio registrado. Stock de insumos actualizado.')
+
+        cliente = servicio.cliente
+        if cliente and float(servicio.precio_cobrado or 0) > 0:
+            cliente.visitas_lealtad += 1
+            cliente.save(update_fields=['visitas_lealtad'])
+            if cliente.visitas_lealtad >= VISITAS_PREMIO_GRANDE:
+                return redirect('premio_grande', pk=cliente.pk)
+            elif cliente.visitas_lealtad == VISITAS_PREMIO_PEQUENO:
+                return redirect('premio_pequeno', pk=cliente.pk)
+
         return redirect('servicio_lista')
 
     return render(request, 'servicios/servicio_form.html', {

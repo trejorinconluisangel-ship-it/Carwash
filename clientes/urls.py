@@ -13,4 +13,9 @@ urlpatterns = [
     path('vehiculos/<int:pk>/eliminar/', views.vehiculo_eliminar, name='vehiculo_eliminar'),
 
     path('api/vehiculos-cliente/', views.vehiculos_por_cliente_api, name='vehiculos_por_cliente_api'),
+
+    path('clientes/<int:pk>/premio-pequeno/', views.premio_pequeno, name='premio_pequeno'),
+    path('clientes/<int:pk>/premio-grande/', views.premio_grande, name='premio_grande'),
+    path('clientes/<int:pk>/canjear-premio-grande/', views.canjear_premio_grande, name='canjear_premio_grande'),
+    path('clientes/<int:pk>/reiniciar-lealtad/', views.reiniciar_lealtad, name='reiniciar_lealtad'),
 ]

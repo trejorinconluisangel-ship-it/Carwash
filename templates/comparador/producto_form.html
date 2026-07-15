@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🔍 {{ titulo }}</div>
+    <div class="page-subtitle">Comparador de Precios</div>
+  </div>
+  <a href="{% url 'comparador_lista' %}" class="btn btn-outline">← Volver</a>
+</div>
+
+<div style="max-width:600px;">
+  <form method="post" id="productoForm">
+  {% csrf_token %}
+  <div style="display:flex; flex-direction:column; gap:16px;">
+
+    <!-- Sección: vincular a insumo -->
+    <div class="card card-cyan">
+      <div class="chart-title">🔗 Vincular a Insumo Existente <span class="text-muted" style="font-size:.75rem; font-weight:400;">(opcional)</span></div>
+      <div class="text-muted mb-2" style="font-size:.8rem;">
+        Selecciona un insumo para jalar su nombre y unidad automáticamente, o déjalo en blanco para un producto independiente.
+      </div>
+      {{ form.insumo }}
+
+      <!-- Badge de vinculado -->
+      <div id="vinculadoBadge" style="display:none; margin-top:10px;">
+        <span style="display:inline-flex; align-items:center; gap:6px; background:rgba(0,212,255,0.12);
+                     border:1px solid rgba(0,212,255,0.35); border-radius:20px; padding:5px 12px;
+                     font-size:.78rem; color:var(--cyan); font-weight:600;">
+          🔗 Vinculado al inventario
+          <button type="button" id="desvincularBtn"
+                  style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:.85rem; line-height:1; padding:0 2px;"
+                  title="Quitar vínculo">✕</button>
+        </span>
+      </div>
+    </div>
+
+    <!-- Sección: datos del producto -->
+    <div class="card">
+      <div class="chart-title">📦 Datos del Producto</div>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+
+        <div>
+          <label class="form-label">Nombre del producto *</label>
+          {{ form.nombre }}
+          <div id="nombreHint" class="text-muted mt-1" style="font-size:.74rem; display:none;">
+            Jalado automáticamente del insumo vinculado
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label class="form-label">Categoría</label>
+            {{ form.categoria }}
+            <div class="text-muted mt-1" style="font-size:.74rem;">
+              <a href="{% url 'categoria_lista_comparador' %}" class="text-cyan" target="_blank">+ Nueva categoría</a>
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Unidad de medida</label>
+            {{ form.unidad }}
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Descripción / Notas</label>
+          {{ form.descripcion }}
+        </div>
+
+      </div>
+    </div>
+
+    {% if form.errors %}
+    <div class="alert alert-danger" style="font-size:.85rem;">
+      {% for field in form %}{% for err in field.errors %}{{ err }}<br>{% endfor %}{% endfor %}
+      {% for err in form.non_field_errors %}{{ err }}<br>{% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="d-flex gap-1">
+      <a href="{% url 'comparador_lista' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary" style="flex:1; justify-content:center;">
+        ✅ {{ titulo }} — Agregar Precios
+      </button>
+    </div>
+
+  </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const INSUMOS = {{ insumos_json|safe }};
+
+const selInsumo  = document.getElementById('id_insumo_select');
+const inputNombre = document.getElementById('id_nombre');
+const selUnidad  = document.getElementById('id_unidad');
+const badge      = document.getElementById('vinculadoBadge');
+const hint       = document.getElementById('nombreHint');
+const desvBtn    = document.getElementById('desvincularBtn');
+
+function aplicarInsumo(pk) {
+  if (!pk || !INSUMOS[pk]) return;
+  const d = INSUMOS[pk];
+  inputNombre.value = d.nombre;
+  inputNombre.readOnly = true;
+  inputNombre.style.opacity = '0.55';
+  // Intentar seleccionar la unidad correspondiente
+  const unidadMap = { litro:'litro', mililitro:'ml', kilo:'kg', gramo:'gramo', pieza:'pieza', galon:'otro' };
+  const u = unidadMap[d.unidad] || '';
+  if (u) selUnidad.value = u;
+  badge.style.display = 'block';
+  hint.style.display = 'block';
+}
+
+function limpiarVinculo() {
+  selInsumo.value = '';
+  inputNombre.value = '';
+  inputNombre.readOnly = false;
+  inputNombre.style.opacity = '1';
+  badge.style.display = 'none';
+  hint.style.display = 'none';
+  inputNombre.focus();
+}
+
+selInsumo.addEventListener('change', () => {
+  if (selInsumo.value) {
+    aplicarInsumo(selInsumo.value);
+  } else {
+    limpiarVinculo();
+  }
+});
+
+desvBtn.addEventListener('click', limpiarVinculo);
+
+// Aplicar al cargar si ya hay uno seleccionado (edición o ?insumo=pk)
+if (selInsumo.value) {
+  aplicarInsumo(selInsumo.value);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Categorías — Comparador{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">📂 Categorías</div>
+    <div class="page-subtitle">Organiza tus productos por tipo</div>
+  </div>
+  <a href="{% url 'comparador_lista' %}" class="btn btn-outline btn-sm">← Comparador</a>
+</div>
+
+<div class="grid-2 mb-3" style="align-items:start;">
+
+  <!-- Formulario nueva categoría -->
+  <div class="card">
+    <div class="chart-title">+ Nueva Categoría</div>
+    <form method="post">
+      {% csrf_token %}
+      <div style="display:flex; gap:10px; align-items:flex-end;">
+        <div style="flex:1;">
+          <label class="form-label">Nombre *</label>
+          {{ form.nombre }}
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm" style="margin-bottom:0;">Agregar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Lista de categorías -->
+  <div class="card">
+    <div class="chart-title">Categorías registradas</div>
+    {% for cat in categorias %}
+    <div style="padding:10px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="font-weight:600; font-size:.9rem;">{{ cat.nombre }}</div>
+        <div class="text-muted" style="font-size:.75rem;">{{ cat.productos.count }} producto{{ cat.productos.count|pluralize }}</div>
+      </div>
+      <form method="post" action="{% url 'categoria_eliminar_comparador' cat.pk %}"
+            onsubmit="return confirm('¿Eliminar categoría {{ cat.nombre }}?')">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger btn-sm">✕</button>
+      </form>
+    </div>
+    {% empty %}
+    <div class="text-muted" style="text-align:center; padding:20px; font-size:.85rem;">
+      Sin categorías. Crea la primera arriba.
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

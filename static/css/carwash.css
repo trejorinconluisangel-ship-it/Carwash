@@ -76,7 +76,7 @@ body::before {
 /* ── Sidebar ──────────────────────────────────────────── */
 .sidebar {
   width: 260px;
-  min-height: 100vh;
+  height: 100vh;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border);
   position: fixed;
@@ -85,6 +85,7 @@ body::before {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding-top: env(safe-area-inset-top);
 }
 
@@ -605,7 +606,7 @@ tbody td {
   top: 0; left: 0; right: 0;
   background: var(--bg-sidebar);
   border-bottom: 1px solid var(--border);
-  z-index: 200;
+  z-index: 400;
   align-items: center;
   /* Respeta el notch / Dynamic Island del iPhone */
   padding-top: env(safe-area-inset-top);
@@ -650,8 +651,7 @@ tbody td {
   display: none;
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.6);
-  z-index: 99;
-  backdrop-filter: blur(2px);
+  z-index: 250;
 }
 .sidebar-overlay.open { display: block; }
 
@@ -660,10 +660,17 @@ tbody td {
   .mobile-topbar { display: flex; }
 
   .sidebar {
+    /* Empieza justo debajo del topbar (no lo tapa ni queda tapado) */
+    top: calc(56px + env(safe-area-inset-top));
+    height: calc(100vh - 56px - env(safe-area-inset-top));
+    padding-top: 8px;
     left: -280px;
     width: 260px;
     transition: left 0.3s cubic-bezier(0.4,0,0.2,1);
-    z-index: 100;
+    /* z-index mayor que overlay (250) pero menor que topbar (400) */
+    z-index: 300;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .sidebar.open { left: 0; }
 

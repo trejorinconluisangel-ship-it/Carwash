@@ -43,7 +43,12 @@ def proveedor_eliminar(request, pk):
 # ── Insumos ──────────────────────────────────────────────────────────────────
 
 def insumo_lista(request):
-    insumos = Insumo.objects.select_related('proveedor').all()
+    from django.db.models import OuterRef, Subquery
+    from comparador.models import Producto as ComparadorProducto
+    cp_subq = ComparadorProducto.objects.filter(insumo=OuterRef('pk')).values('pk')[:1]
+    insumos = Insumo.objects.select_related('proveedor').annotate(
+        comparador_pk=Subquery(cp_subq)
+    )
     return render(request, 'insumos/insumo_lista.html', {'insumos': insumos})
 
 

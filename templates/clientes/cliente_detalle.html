@@ -65,6 +65,94 @@
       </div>
     </div>
 
+    <!-- Lealtad -->
+    <div class="card mb-3" style="border-color:{% if cliente.premio_grande_disponible %}rgba(0,255,136,0.5){% elif cliente.premio_pequeno_alcanzado %}rgba(168,85,247,0.4){% else %}rgba(0,212,255,0.2){% endif %};">
+      <div class="d-flex justify-between align-center mb-2">
+        <div class="chart-title mb-0">⭐ Programa de Lealtad</div>
+        {% if cliente.premio_grande_disponible %}
+          <span class="badge" style="background:rgba(0,255,136,0.15); color:var(--green); border:1px solid rgba(0,255,136,0.4); font-size:.7rem; padding:4px 8px;">PREMIO GRANDE</span>
+        {% elif cliente.premio_pequeno_alcanzado %}
+          <span class="badge" style="background:rgba(168,85,247,0.15); color:var(--purple); border:1px solid rgba(168,85,247,0.4); font-size:.7rem; padding:4px 8px;">PREMIO PEQUEÑO ✓</span>
+        {% endif %}
+      </div>
+
+      <!-- Barra de dos fases -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+          <span style="font-size:.78rem; color:var(--text-muted);">Visitas acumuladas</span>
+          <span style="font-size:.85rem; font-weight:700;
+                color:{% if cliente.premio_grande_disponible %}var(--green){% elif cliente.premio_pequeno_alcanzado %}var(--purple){% else %}var(--cyan){% endif %};">
+            {{ cliente.visitas_lealtad }} / {{ meta_grande }}
+          </span>
+        </div>
+
+        <!-- Track con marcador en 50% (visita 5) -->
+        <div style="position:relative; background:rgba(255,255,255,0.07); border-radius:20px; height:12px; overflow:visible;">
+          <!-- Barra de progreso -->
+          <div style="height:100%; border-radius:20px; width:{% widthratio cliente.visitas_lealtad meta_grande 100 %}%; max-width:100%;
+                      background:{% if cliente.premio_grande_disponible %}var(--green){% elif cliente.premio_pequeno_alcanzado %}linear-gradient(90deg,var(--purple),var(--cyan)){% else %}var(--cyan){% endif %};
+                      box-shadow:0 0 8px {% if cliente.premio_grande_disponible %}rgba(0,255,136,0.4){% else %}rgba(0,212,255,0.3){% endif %};
+                      transition:width 0.4s ease;"></div>
+          <!-- Marcador visita 5 (50%) -->
+          <div style="position:absolute; top:-3px; left:50%; transform:translateX(-50%);
+                      width:4px; height:18px; border-radius:2px;
+                      background:{% if cliente.premio_pequeno_alcanzado %}var(--purple){% else %}rgba(255,255,255,0.25){% endif %};
+                      z-index:2;"></div>
+        </div>
+
+        <!-- Etiquetas de hitos -->
+        <div style="display:flex; justify-content:space-between; margin-top:5px; position:relative;">
+          <span style="font-size:.68rem; color:var(--text-muted);">0</span>
+          <span style="font-size:.68rem; position:absolute; left:50%; transform:translateX(-50%);
+                       color:{% if cliente.premio_pequeno_alcanzado %}var(--purple){% else %}var(--text-muted){% endif %}; font-weight:600;">
+            🎁 {{ meta_pequeno }}
+          </span>
+          <span style="font-size:.68rem; color:{% if cliente.premio_grande_disponible %}var(--green){% else %}var(--text-muted){% endif %}; font-weight:600;">⭐ {{ meta_grande }}</span>
+        </div>
+      </div>
+
+      <!-- Mensaje de estado -->
+      {% if cliente.premio_grande_disponible %}
+        <div style="font-size:.8rem; color:var(--green); margin-bottom:10px; font-weight:600;">🎉 ¡Premio grande disponible!</div>
+      {% elif cliente.premio_pequeno_alcanzado %}
+        <div style="font-size:.8rem; color:var(--purple); margin-bottom:10px;">
+          🎁 Premio pequeño entregado · Faltan {{ cliente.visitas_restantes_grande }} visita{{ cliente.visitas_restantes_grande|pluralize }} para el premio grande
+        </div>
+      {% else %}
+        <div style="font-size:.78rem; color:var(--text-muted); margin-bottom:10px;">
+          Faltan {{ cliente.visitas_restantes_pequeno }} visita{{ cliente.visitas_restantes_pequeno|pluralize }} para el premio pequeño
+        </div>
+      {% endif %}
+
+      {% if cliente.fecha_ultimo_premio %}
+      <div style="font-size:.72rem; color:var(--text-muted); margin-bottom:10px;">
+        Último premio grande: {{ cliente.fecha_ultimo_premio|date:"d/m/Y" }}
+      </div>
+      {% endif %}
+
+      <div class="d-flex gap-1">
+        {% if cliente.premio_grande_disponible %}
+        <a href="{% url 'premio_grande' cliente.pk %}" class="btn btn-sm"
+           style="background:rgba(0,255,136,0.15); color:var(--green); border:1px solid rgba(0,255,136,0.35); flex:1; justify-content:center;">
+          ⭐ Ver Premio Grande
+        </a>
+        {% elif cliente.premio_pequeno_alcanzado %}
+        <a href="{% url 'premio_pequeno' cliente.pk %}" class="btn btn-sm"
+           style="background:rgba(168,85,247,0.12); color:var(--purple); border:1px solid rgba(168,85,247,0.3); flex:1; justify-content:center;">
+          🎁 Ver Premio Pequeño
+        </a>
+        {% endif %}
+        <form method="post" action="{% url 'reiniciar_lealtad' cliente.pk %}"
+              style="{% if cliente.premio_pequeno_alcanzado or cliente.premio_grande_disponible %}flex:1{% else %}width:100%{% endif %};"
+              onsubmit="return confirm('¿Reiniciar el contador de lealtad a 0?')">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline btn-sm" style="width:100%; justify-content:center; font-size:.75rem;">
+            Reiniciar contador
+          </button>
+        </form>
+      </div>
+    </div>
+
     <!-- Vehículos -->
     <div class="card card-purple">
       <div class="d-flex justify-between align-center mb-2">

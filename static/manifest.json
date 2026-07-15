@@ -1,6 +1,6 @@
 {
-  "name": "CarWash Pro",
-  "short_name": "CarWash",
+  "name": "Neowash",
+  "short_name": "Neowash",
   "description": "Sistema de administración para autolavado",
   "start_url": "/",
   "display": "standalone",

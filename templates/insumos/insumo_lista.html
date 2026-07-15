@@ -52,6 +52,13 @@
             <div class="d-flex gap-1">
               <a href="{% url 'insumo_detalle' i.pk %}" class="btn btn-outline btn-sm">Ver</a>
               <a href="{% url 'insumo_editar' i.pk %}" class="btn btn-outline btn-sm">Editar</a>
+              {% if i.comparador_pk %}
+                <a href="{% url 'producto_detalle_comparador' i.comparador_pk %}"
+                   class="btn btn-sm" style="background:rgba(0,212,255,0.12); color:var(--cyan); border:1px solid rgba(0,212,255,0.4);" title="Ver cotizaciones de precio">🔍 Cotizaciones</a>
+              {% else %}
+                <a href="{% url 'producto_crear_comparador' %}?insumo={{ i.pk }}"
+                   class="btn btn-sm" style="background:rgba(0,212,255,0.05); color:var(--cyan); border:1px solid rgba(0,212,255,0.2); font-size:.72rem;" title="Agregar al comparador de precios">🔍 Cotizar</a>
+              {% endif %}
               <a href="{% url 'insumo_eliminar' i.pk %}" class="btn btn-danger btn-sm">✕</a>
             </div>
           </td>

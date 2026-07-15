@@ -19,12 +19,18 @@ TIPO_VEHICULO_CHOICES = [
 ]
 
 
+VISITAS_PREMIO_PEQUENO = 5
+VISITAS_PREMIO_GRANDE = 10
+
+
 class Cliente(models.Model):
     nombre = models.CharField(max_length=150)
     whatsapp = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
     notas = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    visitas_lealtad = models.IntegerField(default=0)
+    fecha_ultimo_premio = models.DateField(null=True, blank=True)
 
     class Meta:
         verbose_name = 'Cliente'
@@ -46,6 +52,22 @@ class Cliente(models.Model):
     @property
     def total_servicios(self):
         return sum(v.servicios.count() for v in self.vehiculos.all())
+
+    @property
+    def premio_pequeno_alcanzado(self):
+        return self.visitas_lealtad >= VISITAS_PREMIO_PEQUENO
+
+    @property
+    def premio_grande_disponible(self):
+        return self.visitas_lealtad >= VISITAS_PREMIO_GRANDE
+
+    @property
+    def visitas_restantes_pequeno(self):
+        return max(0, VISITAS_PREMIO_PEQUENO - self.visitas_lealtad)
+
+    @property
+    def visitas_restantes_grande(self):
+        return max(0, VISITAS_PREMIO_GRANDE - self.visitas_lealtad)
 
 
 class Vehiculo(models.Model):

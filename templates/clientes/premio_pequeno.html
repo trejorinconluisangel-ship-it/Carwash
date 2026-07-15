@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Premio Pequeño — {{ cliente.nombre }}{% endblock %}
+
+{% block content %}
+<div style="display:flex; align-items:center; justify-content:center; min-height:70vh; padding:20px;">
+<div style="max-width:520px; width:100%; text-align:center;">
+
+  <div style="font-size:5rem; line-height:1; margin-bottom:20px; animation:starPulse 1.4s ease-in-out infinite;">🎁</div>
+
+  <div class="card" style="border:2px solid rgba(168,85,247,0.6); background:rgba(168,85,247,0.05); padding:28px 24px; margin-bottom:20px;">
+    <div style="font-size:.75rem; text-transform:uppercase; letter-spacing:3px; color:var(--purple); margin-bottom:10px; font-weight:700;">
+      Programa de Lealtad — Nivel 1
+    </div>
+    <div style="font-size:1.5rem; font-weight:900; color:var(--purple); line-height:1.25; margin-bottom:8px;">
+      ¡{{ cliente.nombre }} llegó a {{ meta_pequeno }} visitas!
+    </div>
+    <div style="font-size:1rem; font-weight:700; color:var(--text); margin-top:12px;">
+      Entregar PREMIO PEQUEÑO al cliente
+    </div>
+    <div class="text-muted" style="font-size:.82rem; margin-top:8px; line-height:1.6;">
+      El contador <strong style="color:var(--cyan);">sigue acumulando</strong> hacia el Premio Grande en la visita {{ meta_grande }}.
+    </div>
+  </div>
+
+  <!-- Progreso hacia el premio grande -->
+  <div class="card mb-3" style="padding:16px 20px;">
+    <div style="font-size:.75rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:10px;">
+      Progreso hacia el Premio Grande
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+      <span style="font-size:.82rem; color:var(--text-muted);">Visitas acumuladas</span>
+      <span style="font-weight:700; color:var(--purple);">{{ cliente.visitas_lealtad }} / {{ meta_grande }}</span>
+    </div>
+    <div style="background:rgba(255,255,255,0.07); border-radius:20px; height:10px; overflow:hidden;">
+      <div style="height:100%; border-radius:20px; width:{% widthratio cliente.visitas_lealtad meta_grande 100 %}%; max-width:100%;
+                  background:var(--purple); box-shadow:0 0 8px rgba(168,85,247,0.5);"></div>
+    </div>
+    <div style="font-size:.75rem; color:var(--text-muted); margin-top:6px;">
+      Faltan {{ cliente.visitas_restantes_grande }} visita{{ cliente.visitas_restantes_grande|pluralize }} para el Premio Grande
+    </div>
+  </div>
+
+  <a href="{% url 'servicio_lista' %}" class="btn btn-primary"
+     style="width:100%; max-width:340px; justify-content:center; padding:14px; font-size:.95rem;">
+    Entendido — Continuar
+  </a>
+
+</div>
+</div>
+
+<style>
+@keyframes starPulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(168,85,247,0.5)); }
+  50%       { transform: scale(1.1); filter: drop-shadow(0 0 18px rgba(168,85,247,0.8)); }
+}
+</style>
+{% endblock %}

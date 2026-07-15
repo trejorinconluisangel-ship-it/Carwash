@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}Comparador de Precios{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🔍 Comparador de Precios</div>
+    <div class="page-subtitle">{{ total }} producto{{ total|pluralize }} registrado{{ total|pluralize }}</div>
+  </div>
+  <div class="d-flex gap-1">
+    <a href="{% url 'categoria_lista_comparador' %}" class="btn btn-outline btn-sm">📂 Categorías</a>
+    <a href="{% url 'producto_crear_comparador' %}" class="btn btn-primary btn-sm">+ Nuevo Producto</a>
+  </div>
+</div>
+
+<!-- Búsqueda y filtros -->
+<div class="card mb-3">
+  <form method="get" class="d-flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
+    <div style="flex:2; min-width:180px;">
+      <label class="form-label" style="font-size:.75rem;">Buscar producto</label>
+      <input type="text" name="q" value="{{ q }}" class="form-control"
+             placeholder="Nombre o descripción…" autocomplete="off">
+    </div>
+    <div style="flex:1; min-width:140px;">
+      <label class="form-label" style="font-size:.75rem;">Categoría</label>
+      <select name="categoria" class="form-control">
+        <option value="">— Todas —</option>
+        {% for cat in categorias %}
+        <option value="{{ cat.pk }}" {% if categoria_id == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="flex:1; min-width:140px;">
+      <label class="form-label" style="font-size:.75rem;">Proveedor</label>
+      <select name="proveedor" class="form-control">
+        <option value="">— Todos —</option>
+        {% for prov in proveedores %}
+        <option value="{{ prov.pk }}" {% if proveedor_id == prov.pk|stringformat:"s" %}selected{% endif %}>{{ prov.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display:flex; gap:8px; align-items:flex-end;">
+      <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+      {% if q or categoria_id or proveedor_id %}
+      <a href="{% url 'comparador_lista' %}" class="btn btn-outline btn-sm">✕ Limpiar</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Resultados -->
+{% if productos %}
+<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:14px; margin-bottom:24px;">
+  {% for p in productos %}
+  <a href="{% url 'producto_detalle_comparador' p.pk %}" style="text-decoration:none;">
+  <div class="card" style="cursor:pointer; transition:border-color 0.2s, transform 0.15s;
+       border-color:{% if p.precio_min %}rgba(0,212,255,0.3){% else %}rgba(100,116,139,0.2){% endif %};"
+       onmouseenter="this.style.borderColor='rgba(0,212,255,0.6)'; this.style.transform='translateY(-2px)'"
+       onmouseleave="this.style.borderColor='{% if p.precio_min %}rgba(0,212,255,0.3){% else %}rgba(100,116,139,0.2){% endif %}'; this.style.transform='none'">
+
+    <div class="d-flex justify-between align-center mb-1">
+      <div style="font-weight:700; font-size:.95rem; color:var(--text); line-height:1.3;">{{ p.nombre_display }}</div>
+      <div style="display:flex; gap:4px; flex-shrink:0; margin-left:8px;">
+        {% if p.es_vinculado %}
+        <span class="badge" style="background:rgba(0,212,255,0.1); color:var(--cyan); border:1px solid rgba(0,212,255,0.3); font-size:.6rem;">🔗 Insumo</span>
+        {% endif %}
+        {% if p.categoria %}
+        <span class="badge badge-purple" style="font-size:.6rem;">{{ p.categoria.nombre }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if p.descripcion %}
+    <div class="text-muted" style="font-size:.78rem; margin-bottom:8px; line-height:1.4;">{{ p.descripcion|truncatechars:60 }}</div>
+    {% endif %}
+
+    <div class="neon-line"></div>
+
+    {% if p.precio_min %}
+    <div style="display:flex; align-items:baseline; gap:6px;">
+      <div style="font-size:1.5rem; font-weight:900; color:var(--green);">${{ p.precio_min }}</div>
+      <div class="text-muted" style="font-size:.75rem;">por {{ p.get_unidad_display }}</div>
+    </div>
+    <div class="text-muted" style="font-size:.72rem; margin-top:2px;">
+      Más barato: <span style="color:var(--cyan);">{{ p.proveedor_mas_barato }}</span>
+    </div>
+    <div class="text-muted" style="font-size:.72rem; margin-top:4px;">
+      {{ p.precios.count }} proveedor{{ p.precios.count|pluralize }} · por {{ p.unidad_display }}
+    </div>
+    {% else %}
+    <div class="text-muted" style="font-size:.8rem; padding:8px 0; text-align:center;">
+      Sin precios registrados aún
+    </div>
+    {% endif %}
+  </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center; padding:60px 20px;">
+  <div style="font-size:3rem; margin-bottom:16px;">🔍</div>
+  {% if q or categoria_id or proveedor_id %}
+  <div style="font-size:1rem; color:var(--text);">Sin resultados para tu búsqueda</div>
+  <div class="text-muted mt-2" style="font-size:.85rem;">Intenta con otros filtros</div>
+  {% else %}
+  <div style="font-size:1rem; color:var(--text);">Aún no hay productos registrados</div>
+  <div class="text-muted mt-2 mb-3" style="font-size:.85rem;">
+    Agrega productos para comparar precios entre proveedores
+  </div>
+  <a href="{% url 'producto_crear_comparador' %}" class="btn btn-primary">+ Agregar primer producto</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -6,13 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="CarWash Pro">
+  <meta name="apple-mobile-web-app-title" content="Neowash">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#050c18">
   <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
   <link rel="manifest" href="{% static 'manifest.json' %}">
-  <title>{% block title %}CarWash Pro{% endblock %} — AutoLavado</title>
-  <link rel="stylesheet" href="{% static 'css/carwash.css' %}">
+  <title>{% block title %}Neowash{% endblock %} — Neowash</title>
+  <link rel="stylesheet" href="{% static 'css/carwash.css' %}?v=4">
   <style>
     /* ── Help Panel ─────────────────────────────────── */
     .help-btn {
@@ -103,7 +103,7 @@
 <aside class="sidebar">
   <div class="sidebar-logo">
     <div class="car-icon">🚗</div>
-    <h1>CarWash Pro</h1>
+    <h1>Neowash</h1>
     <span>Sistema de Gestión</span>
   </div>
 
@@ -143,6 +143,11 @@
       <span class="icon">👤</span> Clientes y Vehículos
     </a>
 
+    <div class="nav-section">Herramientas</div>
+    <a href="{% url 'comparador_lista' %}" class="nav-item {% if 'comparador' in request.resolver_match.url_name or 'categoria' in request.resolver_match.url_name and 'comparador' in request.path %}active{% endif %}">
+      <span class="icon">🔍</span> Comparador de Precios
+    </a>
+
     <div class="nav-section">Tienda / Mercancía</div>
     <a href="{% url 'producto_lista' %}" class="nav-item {% if request.resolver_match.url_name in 'producto_lista,producto_crear,producto_detalle,producto_editar,producto_eliminar' %}active{% endif %}">
       <span class="icon">🛍️</span> Productos en Venta
@@ -161,7 +166,7 @@
   <button class="hamburger" id="hamburger" aria-label="Menú">
     <span></span><span></span><span></span>
   </button>
-  <span class="mobile-title">🚗 CarWash Pro</span>
+  <span class="mobile-title">🚗 Neowash</span>
 </div>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
@@ -187,7 +192,7 @@
   <div class="help-header">
     <button class="help-close-btn" id="helpClose">✕</button>
     <h2>📖 Guía del Sistema</h2>
-    <p>CarWash Pro — Cómo funciona cada sección</p>
+    <p>Neowash — Cómo funciona cada sección</p>
   </div>
   <div class="help-body">
 
