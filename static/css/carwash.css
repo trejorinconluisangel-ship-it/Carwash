@@ -731,8 +731,7 @@ tbody td {
   .btn-sm { min-height: 36px; }
   .nav-item { padding: 14px 20px; }
 
-  /* ── Help panel full-width ───────────────────────────── */
-  .help-panel { width: 100vw; right: -100vw; }
+  /* ── Help button safe area ───────────────────────────── */
   .help-btn { bottom: calc(24px + env(safe-area-inset-bottom)); right: 20px; }
 
   /* ── Inputs: evitar auto-zoom de iOS (font-size < 16px lo dispara) ── */
