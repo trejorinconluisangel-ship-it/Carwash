@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
   <link rel="manifest" href="{% static 'manifest.json' %}">
   <title>{% block title %}Neowash{% endblock %} — Neowash</title>
-  <link rel="stylesheet" href="{% static 'css/carwash.css' %}?v=4">
+  <link rel="stylesheet" href="{% static 'css/carwash.css' %}?v=5">
   <style>
     /* ── Help Panel ─────────────────────────────────── */
     .help-btn {
@@ -35,12 +35,13 @@
 
     .help-panel {
       position: fixed;
-      top: 0; right: -440px;
-      width: 420px; height: 100vh;
+      top: 0; right: -440px; bottom: 0;
+      width: 420px;
       background: #080f20;
       border-left: 1px solid rgba(168,85,247,0.3);
       z-index: 1000;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
       box-shadow: -10px 0 40px rgba(0,0,0,0.5);
     }
@@ -94,6 +95,17 @@
     .help-section-body strong { color: var(--cyan); }
     .help-section-body ul { padding-left: 16px; }
     .help-section-body li { margin-bottom: 4px; }
+
+    @media (max-width: 768px) {
+      /* Empuja el header debajo del notch/Dynamic Island */
+      .help-header {
+        padding-top: calc(24px + env(safe-area-inset-top));
+      }
+      /* Deja espacio al indicador de inicio en la parte inferior */
+      .help-body {
+        padding-bottom: calc(32px + env(safe-area-inset-bottom));
+      }
+    }
   </style>
   {% block extra_css %}{% endblock %}
 </head>

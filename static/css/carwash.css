@@ -733,5 +733,15 @@ tbody td {
 
   /* ── Help panel full-width ───────────────────────────── */
   .help-panel { width: 100vw; right: -100vw; }
-  .help-btn { bottom: calc(24px + env(safe-area-inset-bottom)); }
+  .help-btn { bottom: calc(24px + env(safe-area-inset-bottom)); right: 20px; }
+
+  /* ── Inputs: evitar auto-zoom de iOS (font-size < 16px lo dispara) ── */
+  .form-control, .form-select { font-size: 16px; }
+
+  /* ── Botones de acción en topbar: pueden envolverse si hay varios ─── */
+  .topbar > .d-flex { flex-wrap: wrap; gap: 8px; }
+
+  /* ── Tablas: tamaño de fuente ligeramente mayor para legibilidad ──── */
+  tbody td { font-size: .82rem; padding: 10px 10px; }
+  thead th { padding: 8px 10px; }
 }
