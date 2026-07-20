@@ -168,6 +168,9 @@
     <a href="{% url 'comparador_lista' %}" class="nav-item {% if 'comparador' in request.resolver_match.url_name or 'categoria' in request.resolver_match.url_name and 'comparador' in request.path %}active{% endif %}">
       <span class="icon">🔍</span> Comparador de Precios
     </a>
+    <a href="{% url 'lista_compras' %}" class="nav-item {% if request.resolver_match.url_name in 'lista_compras,item_crear,item_toggle,item_eliminar_lista,recordatorio_crear,recordatorio_toggle,recordatorio_eliminar' %}active{% endif %}">
+      <span class="icon">🛒</span> Lista de Compras
+    </a>
 
     <div class="nav-section">Tienda / Mercancía</div>
     <a href="{% url 'producto_lista' %}" class="nav-item {% if request.resolver_match.url_name in 'producto_lista,producto_crear,producto_detalle,producto_editar,producto_eliminar' %}active{% endif %}">

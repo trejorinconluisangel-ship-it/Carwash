@@ -19,4 +19,13 @@ urlpatterns = [
     path('compras/', views.compra_lista, name='compra_lista'),
     path('compras/nueva/', views.compra_crear, name='compra_crear'),
     path('compras/<int:pk>/eliminar/', views.compra_eliminar, name='compra_eliminar'),
+
+    # Lista de compras y recordatorios
+    path('lista/', views.lista_compras, name='lista_compras'),
+    path('lista/agregar/', views.item_crear, name='item_crear'),
+    path('lista/<int:pk>/toggle/', views.item_toggle, name='item_toggle'),
+    path('lista/<int:pk>/eliminar/', views.item_eliminar_lista, name='item_eliminar_lista'),
+    path('recordatorios/nuevo/', views.recordatorio_crear, name='recordatorio_crear'),
+    path('recordatorios/<int:pk>/toggle/', views.recordatorio_toggle, name='recordatorio_toggle'),
+    path('recordatorios/<int:pk>/eliminar/', views.recordatorio_eliminar, name='recordatorio_eliminar'),
 ]

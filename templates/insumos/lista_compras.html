@@ -1,0 +1,465 @@
+{% extends 'base.html' %}
+{% block title %}Lista de Compras{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🛒 Lista de Compras</div>
+    <div class="page-subtitle">
+      {% if pendientes %}
+        <span style="color:var(--text);">{{ pendientes }} pendiente{{ pendientes|pluralize }}</span>
+        {% if fuego_count %} · <span style="color:var(--red);">🔥 {{ fuego_count }} Fuego</span>{% endif %}
+        {% if pronto_count %} · <span style="color:var(--yellow);">⚡ {{ pronto_count }} Pronto</span>{% endif %}
+      {% else %}
+        <span style="color:var(--green);">✓ Todo comprado</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Formulario agregar item ───────────────────────────────── -->
+<div class="card mb-3" style="border-color:rgba(0,212,255,0.25);">
+  <div class="chart-title">+ Agregar a la lista</div>
+  <form method="post" action="{% url 'item_crear' %}" id="formAgregar">
+    {% csrf_token %}
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+
+      <div>
+        <label class="form-label">Insumo del inventario</label>
+        <select name="insumo" class="form-select" id="selectInsumo" onchange="autoFillProveedor(this)">
+          <option value="">— o escribe abajo el nombre —</option>
+          {% for ins in insumos %}
+          <option value="{{ ins.pk }}" data-prov="{{ ins.proveedor_id|default:'' }}">{{ ins.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label">O nombre libre</label>
+        <input type="text" name="nombre_libre" class="form-control" placeholder="Ej: Cubeta roja, Trapos, Franela…" id="inputNombre">
+      </div>
+
+      <div>
+        <label class="form-label">Cantidad / Descripción</label>
+        <input type="text" name="cantidad" class="form-control" placeholder="Ej: 2 litros, 1 caja, 500 ml">
+      </div>
+
+      <div>
+        <label class="form-label">Proveedor (opcional)</label>
+        <select name="proveedor" class="form-select" id="selectProv">
+          <option value="">Sin especificar</option>
+          {% for prov in proveedores %}
+          <option value="{{ prov.pk }}">{{ prov.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+      <div>
+        <label class="form-label">Prioridad</label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <label class="prio-radio" style="--c:var(--red);">
+            <input type="radio" name="prioridad" value="fuego" required>
+            <span>🔥 Fuego</span>
+          </label>
+          <label class="prio-radio" style="--c:var(--yellow);">
+            <input type="radio" name="prioridad" value="pronto">
+            <span>⚡ Pronto</span>
+          </label>
+          <label class="prio-radio" style="--c:var(--green);" >
+            <input type="radio" name="prioridad" value="sinprisa" checked>
+            <span>🌿 Sin prisa</span>
+          </label>
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Nota (opcional)</label>
+        <input type="text" name="notas" class="form-control" placeholder="Ej: Comprar en oferta, pedir factura…">
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Agregar a la lista</button>
+  </form>
+</div>
+
+<!-- ── Filtros ───────────────────────────────────────────────── -->
+<div class="card mb-3" style="padding:14px 18px;">
+  <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+    <span style="font-size:.72rem; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase; margin-right:4px;">Filtrar</span>
+
+    <a href="{% url 'lista_compras' %}"
+       class="period-btn {% if not filtro_cat and not filtro_prov %}active{% endif %}">
+      Todos
+    </a>
+
+    {% for val, label in categorias %}
+    <a href="?cat={{ val }}{% if filtro_prov %}&prov={{ filtro_prov }}{% endif %}"
+       class="period-btn {% if filtro_cat == val %}active{% endif %}">
+      {{ label }}
+    </a>
+    {% endfor %}
+
+    {% if proveedores %}
+    <span style="width:1px; height:20px; background:var(--border); margin:0 4px;"></span>
+    {% for prov in proveedores %}
+    <a href="?prov={{ prov.pk }}{% if filtro_cat %}&cat={{ filtro_cat }}{% endif %}"
+       class="period-btn {% if filtro_prov == prov.pk|stringformat:'s' %}active{% endif %}">
+      {{ prov.nombre }}
+    </a>
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── Lista pendientes ──────────────────────────────────────── -->
+{% with pendientes_list=items|dictsort:"comprado" %}
+
+{% set has_pending = False %}
+{% for item in items %}{% if not item.comprado %}{% if forloop.first %}
+<p class="section-header-label">PENDIENTES</p>
+{% endif %}
+
+<div class="item-card prio-{{ item.prioridad }}" id="item-{{ item.pk }}">
+  <div class="item-stripe"></div>
+  <div class="item-body">
+    <div class="item-top">
+      <div>
+        <span class="item-nombre">{{ item.nombre_display }}</span>
+        {% if item.cantidad %}
+          <span class="item-cantidad">· {{ item.cantidad }}</span>
+        {% endif %}
+        <span class="prio-chip prio-chip-{{ item.prioridad }}">
+          {% if item.prioridad == 'fuego' %}🔥 Fuego
+          {% elif item.prioridad == 'pronto' %}⚡ Pronto
+          {% else %}🌿 Sin prisa{% endif %}
+        </span>
+      </div>
+      <div class="item-actions">
+        <form method="post" action="{% url 'item_toggle' item.pk %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm" style="background:rgba(0,255,136,0.1); color:var(--green); border:1px solid rgba(0,255,136,0.3);" title="Marcar como comprado">
+            ✓ Comprado
+          </button>
+        </form>
+        <form method="post" action="{% url 'item_eliminar_lista' item.pk %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger btn-sm" title="Quitar de la lista">✕</button>
+        </form>
+      </div>
+    </div>
+    {% if item.proveedor or item.notas %}
+    <div class="item-meta">
+      {% if item.proveedor %}<span>🏭 {{ item.proveedor.nombre }}</span>{% endif %}
+      {% if item.notas %}<span class="text-muted">{{ item.notas }}</span>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endif %}{% endfor %}
+
+<!-- ── Comprados (al fondo) ──────────────────────────────────── -->
+{% for item in items %}{% if item.comprado %}{% if forloop.first %}
+<div style="margin:24px 0 10px; display:flex; align-items:center; gap:10px;">
+  <div style="flex:1; height:1px; background:var(--border);"></div>
+  <span style="font-size:.7rem; color:var(--text-muted); letter-spacing:1.5px; text-transform:uppercase;">Comprados</span>
+  <div style="flex:1; height:1px; background:var(--border);"></div>
+</div>
+{% endif %}
+
+<div class="item-card item-comprado">
+  <div class="item-body" style="opacity:.45;">
+    <div class="item-top">
+      <div>
+        <span class="item-nombre" style="text-decoration:line-through;">{{ item.nombre_display }}</span>
+        {% if item.cantidad %}<span class="item-cantidad">· {{ item.cantidad }}</span>{% endif %}
+        {% if item.fecha_compra %}
+        <span style="font-size:.7rem; color:var(--text-muted); margin-left:6px;">✓ {{ item.fecha_compra|timesince }} atrás</span>
+        {% endif %}
+      </div>
+      <div class="item-actions">
+        <form method="post" action="{% url 'item_toggle' item.pk %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline btn-sm" style="font-size:.72rem;">↩ Deshacer</button>
+        </form>
+        <form method="post" action="{% url 'item_eliminar_lista' item.pk %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger btn-sm">✕</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endif %}{% endfor %}
+
+<!-- Estado vacío -->
+{% if not items %}
+<div class="card" style="text-align:center; padding:48px 24px; color:var(--text-muted);">
+  <div style="font-size:2.5rem; margin-bottom:12px;">🛒</div>
+  <div style="font-weight:600; margin-bottom:4px;">Lista vacía</div>
+  <div style="font-size:.85rem;">Agrega el primer producto usando el formulario de arriba.</div>
+</div>
+{% endif %}
+
+{% endwith %}
+
+<!-- ═══ RECORDATORIOS ═══════════════════════════════════════════ -->
+<div style="margin-top:40px;">
+  <div class="topbar" style="margin-bottom:16px;">
+    <div>
+      <div class="page-title" style="font-size:1.2rem;">📌 Recordatorios</div>
+      <div class="page-subtitle">Avisos, pendientes y cosas por hacer</div>
+    </div>
+  </div>
+
+  <!-- Formulario recordatorio -->
+  <div class="card mb-3" style="border-color:rgba(168,85,247,0.25);">
+    <form method="post" action="{% url 'recordatorio_crear' %}" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+      {% csrf_token %}
+      <div style="flex:1; min-width:200px;">
+        <label class="form-label">Nuevo recordatorio</label>
+        <input type="text" name="texto" class="form-control" placeholder="Ej: Llamar al proveedor el martes, renovar póliza del compresor…" required>
+      </div>
+      <div>
+        <label class="form-label">Urgencia</label>
+        <select name="prioridad" class="form-select">
+          {% for val, label in prioridades %}
+          <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-purple" style="white-space:nowrap;">+ Recordatorio</button>
+    </form>
+  </div>
+
+  <!-- Lista de recordatorios -->
+  {% for r in recordatorios %}
+  {% if not r.completado %}
+
+  <div class="item-card prio-{{ r.prioridad }} rec-card">
+    <div class="item-stripe"></div>
+    <div class="item-body">
+      <div class="item-top">
+        <span class="item-nombre">{{ r.texto }}</span>
+        <div class="item-actions">
+          <span class="prio-chip prio-chip-{{ r.prioridad }}">
+            {% if r.prioridad == 'fuego' %}🔥 Fuego
+            {% elif r.prioridad == 'pronto' %}⚡ Pronto
+            {% else %}🌿 Sin prisa{% endif %}
+          </span>
+          <form method="post" action="{% url 'recordatorio_toggle' r.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm" style="background:rgba(0,255,136,0.1); color:var(--green); border:1px solid rgba(0,255,136,0.3);">✓ Listo</button>
+          </form>
+          <form method="post" action="{% url 'recordatorio_eliminar' r.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">✕</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% endif %}
+  {% endfor %}
+
+  <!-- Recordatorios completados -->
+  {% for r in recordatorios %}{% if r.completado %}{% if forloop.first %}
+  <div style="margin:20px 0 10px; display:flex; align-items:center; gap:10px;">
+    <div style="flex:1; height:1px; background:var(--border);"></div>
+    <span style="font-size:.7rem; color:var(--text-muted); letter-spacing:1.5px; text-transform:uppercase;">Completados</span>
+    <div style="flex:1; height:1px; background:var(--border);"></div>
+  </div>
+  {% endif %}
+  <div class="item-card item-comprado rec-card">
+    <div class="item-body" style="opacity:.4;">
+      <div class="item-top">
+        <span class="item-nombre" style="text-decoration:line-through;">{{ r.texto }}</span>
+        <div class="item-actions">
+          <form method="post" action="{% url 'recordatorio_toggle' r.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline btn-sm" style="font-size:.72rem;">↩ Reactivar</button>
+          </form>
+          <form method="post" action="{% url 'recordatorio_eliminar' r.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">✕</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}{% endfor %}
+
+  {% if not recordatorios %}
+  <div class="card" style="text-align:center; padding:32px; color:var(--text-muted);">
+    <div style="font-size:2rem; margin-bottom:8px;">📌</div>
+    <div style="font-size:.85rem;">Sin recordatorios activos.</div>
+  </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .section-header-label {
+    font-size: .65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin: 0 0 10px;
+  }
+
+  /* ── Item card ── */
+  .item-card {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-card);
+    margin-bottom: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .item-card:hover { border-color: rgba(0,212,255,0.3); }
+
+  .item-stripe {
+    width: 4px;
+    flex-shrink: 0;
+  }
+
+  /* Colores de franja por prioridad */
+  .prio-fuego    .item-stripe { background: var(--red); }
+  .prio-pronto   .item-stripe { background: var(--yellow); }
+  .prio-sinprisa .item-stripe { background: var(--green); }
+
+  /* Borde sutil del card por prioridad */
+  .prio-fuego    { border-color: rgba(255,61,113,0.3); }
+  .prio-pronto   { border-color: rgba(255,214,10,0.25); }
+  .prio-sinprisa { border-color: rgba(0,255,136,0.2); }
+
+  .item-comprado { border-color: var(--border) !important; }
+  .item-comprado .item-stripe { background: var(--text-muted); }
+
+  .item-body {
+    flex: 1;
+    padding: 12px 14px;
+    min-width: 0;
+  }
+
+  .item-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .item-nombre {
+    font-size: .92rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .item-cantidad {
+    font-size: .82rem;
+    color: var(--cyan);
+    margin-left: 4px;
+  }
+
+  .item-meta {
+    display: flex;
+    gap: 12px;
+    margin-top: 5px;
+    font-size: .75rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+  }
+
+  .item-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  /* ── Priority chip ── */
+  .prio-chip {
+    display: inline-block;
+    font-size: .65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 50px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .prio-chip-fuego    { background: rgba(255,61,113,0.12); color: var(--red);    border: 1px solid rgba(255,61,113,0.3); }
+  .prio-chip-pronto   { background: rgba(255,214,10,0.12); color: var(--yellow); border: 1px solid rgba(255,214,10,0.3); }
+  .prio-chip-sinprisa { background: rgba(0,255,136,0.1);   color: var(--green);  border: 1px solid rgba(0,255,136,0.25); }
+
+  /* ── Radio buttons de prioridad ── */
+  .prio-radio {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: .82rem;
+    color: var(--text-muted);
+    transition: all 0.18s;
+  }
+  .prio-radio input[type=radio] { display: none; }
+  .prio-radio:has(input:checked) {
+    border-color: var(--c);
+    background: color-mix(in srgb, var(--c) 12%, transparent);
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* ── Recordatorio card ── */
+  .rec-card { border-radius: 10px; }
+
+  /* ── Mobile ── */
+  @media (max-width: 768px) {
+    .item-top { flex-direction: column; gap: 8px; }
+    .item-actions { flex-wrap: wrap; }
+    .prio-chip { margin-left: 0; margin-top: 4px; display: inline-block; }
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Auto-llenar proveedor al seleccionar insumo
+  const provOptions = {
+    {% for ins in insumos %}{% if ins.proveedor_id %}"{{ ins.pk }}": "{{ ins.proveedor_id }}",{% endif %}{% endfor %}
+  };
+
+  function autoFillProveedor(sel) {
+    const provId = provOptions[sel.value];
+    const provSel = document.getElementById('selectProv');
+    if (provId) {
+      provSel.value = provId;
+    }
+    // Si seleccionó un insumo, limpiar el nombre libre
+    if (sel.value) {
+      document.getElementById('inputNombre').value = '';
+    }
+  }
+
+  // Limpiar select de insumo si escribe nombre libre
+  document.getElementById('inputNombre').addEventListener('input', function() {
+    if (this.value.trim()) {
+      document.getElementById('selectInsumo').value = '';
+    }
+  });
+</script>
+{% endblock %}

@@ -77,6 +77,55 @@ class Insumo(models.Model):
         return resultados
 
 
+PRIORIDAD_LISTA = [
+    ('fuego',    '🔥 Fuego'),
+    ('pronto',   '⚡ Pronto'),
+    ('sinprisa', '🌿 Sin prisa'),
+]
+
+
+class ItemLista(models.Model):
+    insumo       = models.ForeignKey(Insumo, null=True, blank=True, on_delete=models.SET_NULL, related_name='items_lista')
+    nombre_libre = models.CharField(max_length=200, blank=True)
+    cantidad     = models.CharField(max_length=80, blank=True, help_text='Ej: 2 litros, 1 caja, 500 ml')
+    proveedor    = models.ForeignKey(Proveedor, null=True, blank=True, on_delete=models.SET_NULL, related_name='items_lista')
+    prioridad    = models.CharField(max_length=10, choices=PRIORIDAD_LISTA, default='sinprisa')
+    notas        = models.CharField(max_length=400, blank=True)
+    comprado     = models.BooleanField(default=False)
+    fecha_compra = models.DateTimeField(null=True, blank=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Item de lista'
+        verbose_name_plural = 'Lista de compras'
+
+    def __str__(self):
+        return self.nombre_display
+
+    @property
+    def nombre_display(self):
+        return self.insumo.nombre if self.insumo_id else self.nombre_libre
+
+    @property
+    def color(self):
+        return {'fuego': 'red', 'pronto': 'yellow', 'sinprisa': 'green'}.get(self.prioridad, 'cyan')
+
+
+class Recordatorio(models.Model):
+    texto            = models.CharField(max_length=500)
+    prioridad        = models.CharField(max_length=10, choices=PRIORIDAD_LISTA, default='sinprisa')
+    completado       = models.BooleanField(default=False)
+    fecha_completado = models.DateTimeField(null=True, blank=True)
+    created_at       = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Recordatorio'
+        verbose_name_plural = 'Recordatorios'
+
+    def __str__(self):
+        return self.texto[:60]
+
+
 class Compra(models.Model):
     insumo = models.ForeignKey(Insumo, on_delete=models.CASCADE, related_name='compras')
     cantidad = models.DecimalField(max_digits=10, decimal_places=3)

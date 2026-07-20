@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.db.models import Sum, F
-from .models import Proveedor, Insumo, Compra
+from django.db.models import Sum, F, Case, When, IntegerField
+from .models import Proveedor, Insumo, Compra, ItemLista, Recordatorio, CATEGORIA_CHOICES, PRIORIDAD_LISTA
 from .forms import ProveedorForm, InsumoForm, CompraForm
 
 
@@ -120,3 +120,128 @@ def compra_eliminar(request, pk):
         messages.success(request, 'Compra eliminada y stock revertido.')
         return redirect('compra_lista')
     return render(request, 'insumos/confirmar_eliminar.html', {'obj': obj, 'tipo': 'compra'})
+
+
+# ── Orden de prioridad compartido ────────────────────────────────────────────
+_PRIO_ORDER = Case(
+    When(prioridad='fuego',    then=0),
+    When(prioridad='pronto',   then=1),
+    When(prioridad='sinprisa', then=2),
+    default=3,
+    output_field=IntegerField(),
+)
+
+
+# ── Lista de compras ─────────────────────────────────────────────────────────
+
+def lista_compras(request):
+    filtro_cat  = request.GET.get('cat', '')
+    filtro_prov = request.GET.get('prov', '')
+
+    items = (
+        ItemLista.objects
+        .select_related('insumo', 'proveedor')
+        .annotate(orden_prio=_PRIO_ORDER)
+        .order_by('comprado', 'orden_prio', '-created_at')
+    )
+    if filtro_cat:
+        from django.db.models import Q
+        items = items.filter(
+            Q(insumo__categoria=filtro_cat) | Q(insumo__isnull=True)
+        ) if filtro_cat else items
+        items = items.filter(Q(insumo__categoria=filtro_cat))
+    if filtro_prov:
+        items = items.filter(proveedor_id=filtro_prov)
+
+    recordatorios = (
+        Recordatorio.objects
+        .annotate(orden_prio=_PRIO_ORDER)
+        .order_by('completado', 'orden_prio', '-created_at')
+    )
+
+    pendientes   = items.filter(comprado=False).count()
+    fuego_count  = items.filter(comprado=False, prioridad='fuego').count()
+    pronto_count = items.filter(comprado=False, prioridad='pronto').count()
+
+    return render(request, 'insumos/lista_compras.html', {
+        'items':        items,
+        'recordatorios': recordatorios,
+        'pendientes':   pendientes,
+        'fuego_count':  fuego_count,
+        'pronto_count': pronto_count,
+        'insumos':      Insumo.objects.order_by('nombre'),
+        'proveedores':  Proveedor.objects.order_by('nombre'),
+        'categorias':   CATEGORIA_CHOICES,
+        'prioridades':  PRIORIDAD_LISTA,
+        'filtro_cat':   filtro_cat,
+        'filtro_prov':  filtro_prov,
+    })
+
+
+def item_crear(request):
+    if request.method == 'POST':
+        insumo_id    = request.POST.get('insumo') or None
+        nombre_libre = request.POST.get('nombre_libre', '').strip()
+        cantidad     = request.POST.get('cantidad', '').strip()
+        proveedor_id = request.POST.get('proveedor') or None
+        prioridad    = request.POST.get('prioridad', 'sinprisa')
+        notas        = request.POST.get('notas', '').strip()
+
+        if insumo_id or nombre_libre:
+            item = ItemLista(
+                cantidad=cantidad, prioridad=prioridad, notas=notas,
+            )
+            if insumo_id:
+                item.insumo_id = insumo_id
+            else:
+                item.nombre_libre = nombre_libre
+            if proveedor_id:
+                item.proveedor_id = proveedor_id
+            item.save()
+            messages.success(request, f'"{item.nombre_display}" agregado a la lista.')
+        else:
+            messages.error(request, 'Escribe el nombre del producto o selecciona un insumo.')
+    return redirect('lista_compras')
+
+
+def item_toggle(request, pk):
+    if request.method == 'POST':
+        from django.utils import timezone
+        item = get_object_or_404(ItemLista, pk=pk)
+        item.comprado = not item.comprado
+        item.fecha_compra = timezone.now() if item.comprado else None
+        item.save(update_fields=['comprado', 'fecha_compra'])
+    return redirect('lista_compras')
+
+
+def item_eliminar_lista(request, pk):
+    if request.method == 'POST':
+        get_object_or_404(ItemLista, pk=pk).delete()
+    return redirect('lista_compras')
+
+
+def recordatorio_crear(request):
+    if request.method == 'POST':
+        texto     = request.POST.get('texto', '').strip()
+        prioridad = request.POST.get('prioridad', 'sinprisa')
+        if texto:
+            Recordatorio.objects.create(texto=texto, prioridad=prioridad)
+        else:
+            messages.error(request, 'Escribe el recordatorio.')
+    return redirect('lista_compras')
+
+
+def recordatorio_toggle(request, pk):
+    if request.method == 'POST':
+        from django.utils import timezone
+        r = get_object_or_404(Recordatorio, pk=pk)
+        r.completado = not r.completado
+        r.fecha_completado = timezone.now() if r.completado else None
+        r.save(update_fields=['completado', 'fecha_completado'])
+    return redirect('lista_compras')
+
+
+def recordatorio_eliminar(request, pk):
+    if request.method == 'POST':
+        get_object_or_404(Recordatorio, pk=pk).delete()
+    return redirect('lista_compras')
