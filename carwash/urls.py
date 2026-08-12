@@ -9,4 +9,6 @@ urlpatterns = [
     path('', include('tienda.urls')),
     path('', include('clientes.urls')),
     path('', include('comparador.urls')),
+    path('', include('agenda.urls')),
+    path('', include('pendientes.urls')),
 ]

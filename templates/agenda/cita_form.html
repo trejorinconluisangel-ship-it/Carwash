@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">📅 {{ titulo }}</div>
+  </div>
+  <a href="{% url 'agenda_calendario' %}" class="btn btn-outline">← Volver al calendario</a>
+</div>
+
+<form method="post" id="citaForm">
+{% csrf_token %}
+<div class="form-layout-2col">
+
+  <div style="display:flex; flex-direction:column; gap:16px;">
+
+    <div class="card card-purple">
+      <div class="chart-title">👤 Cliente</div>
+      <div class="grid-2">
+        <div>
+          <label class="form-label">Cliente registrado</label>
+          {{ form.cliente }}
+        </div>
+        <div>
+          <label class="form-label">Vehículo del cliente</label>
+          {{ form.vehiculo }}
+          <div class="text-muted mt-1" style="font-size:.75rem;">Se carga automáticamente al seleccionar cliente</div>
+        </div>
+      </div>
+      <div class="grid-2 mt-2">
+        <div>
+          <label class="form-label">O nombre (si aún no está registrado)</label>
+          {{ form.nombre_contacto }}
+        </div>
+        <div>
+          <label class="form-label">Teléfono / WhatsApp</label>
+          {{ form.telefono_contacto }}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="chart-title">🚿 Servicio, Fecha y Hora</div>
+      <div class="grid-3">
+        <div>
+          <label class="form-label">Tipo de servicio</label>
+          {{ form.tipo_servicio }}
+        </div>
+        <div>
+          <label class="form-label">Fecha *</label>
+          {{ form.fecha }}
+        </div>
+        <div>
+          <label class="form-label">Hora *</label>
+          {{ form.hora }}
+        </div>
+      </div>
+      <div class="mt-2">
+        <label class="form-label">Notas</label>
+        {{ form.notas }}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="chart-title">📌 Estado</div>
+      {{ form.estado }}
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:13px;">
+      ✅ Guardar Cita
+    </button>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:14px;">
+    {% if obj %}
+    <div class="card card-green">
+      <div class="chart-title">🚿 Cuando se realice el lavado</div>
+      <p class="text-muted" style="font-size:.82rem; margin-bottom:10px;">
+        Cuando el cliente llegue y se cobre el servicio, regístralo como una venta real:
+      </p>
+      <a class="btn btn-outline" style="width:100%; justify-content:center;"
+         href="{% url 'servicio_crear' %}?{% if obj.cliente_id %}cliente={{ obj.cliente_id }}&{% endif %}{% if obj.vehiculo_id %}vehiculo={{ obj.vehiculo_id }}&{% endif %}{% if obj.tipo_servicio_id %}tipo_servicio={{ obj.tipo_servicio_id }}&{% endif %}fecha={{ obj.fecha|date:'Y-m-d' }}">
+        → Registrar como Servicio
+      </a>
+    </div>
+
+    <div class="card card-orange">
+      <div class="chart-title">🗑️ Eliminar cita</div>
+      <form method="post" action="{% url 'cita_eliminar' obj.pk %}" onsubmit="return confirm('¿Eliminar esta cita?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger" style="width:100%; justify-content:center;">Eliminar cita</button>
+      </form>
+    </div>
+    {% else %}
+    <div class="card card-cyan">
+      <div class="chart-title">💡 Tip</div>
+      <p class="text-muted" style="font-size:.82rem;">
+        Puedes agendar sin capturar todos los datos — solo fecha, hora y nombre de contacto son suficientes.
+        Cuando el cliente llegue a lavar su vehículo, esa cita se puede convertir en un Servicio real desde aquí.
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const selCliente = document.getElementById('id_cliente');
+  const selVehiculo = document.getElementById('id_vehiculo');
+  const vehiculoActualId = "{{ form.instance.vehiculo_id|default:'' }}";
+
+  async function cargarVehiculos(clienteId, seleccionar) {
+    selVehiculo.innerHTML = '<option value="">— Sin vehículo específico —</option>';
+    if (!clienteId) return;
+    try {
+      const resp = await fetch(`/api/vehiculos-cliente/?cliente_pk=${clienteId}`);
+      const data = await resp.json();
+      data.vehiculos.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.pk;
+        opt.textContent = `${v.placa.toUpperCase()} — ${v.marca} ${v.modelo || ''}`.trim();
+        if (seleccionar && String(v.pk) === String(seleccionar)) opt.selected = true;
+        selVehiculo.appendChild(opt);
+      });
+    } catch (e) { /* noop */ }
+  }
+
+  selCliente.addEventListener('change', () => cargarVehiculos(selCliente.value));
+  if (selCliente.value) cargarVehiculos(selCliente.value, vehiculoActualId);
+</script>
+{% endblock %}

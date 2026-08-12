@@ -120,7 +120,14 @@ def servicio_crear(request):
         for tv in tipos_vehiculo:
             precios_data[ts.pk]['vehiculos'][tv.pk] = round(float(ts.precio_base) * float(tv.multiplicador_precio), 2)
 
-    form = ServicioForm(request.POST or None)
+    initial = {}
+    if request.method == 'GET':
+        for campo in ('cliente', 'vehiculo', 'tipo_servicio', 'fecha'):
+            valor = request.GET.get(campo)
+            if valor:
+                initial[campo] = valor
+
+    form = ServicioForm(request.POST or None, initial=initial)
     if form.is_valid():
         servicio = form.save()
         messages.success(request, 'Servicio registrado. Stock de insumos actualizado.')

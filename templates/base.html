@@ -133,6 +133,9 @@
     <a href="{% url 'dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
       <span class="icon">⚡</span> Dashboard
     </a>
+    <a href="{% url 'agenda_calendario' %}" class="nav-item {% if request.resolver_match.url_name in 'agenda_calendario,cita_crear,cita_editar,cita_eliminar,cita_estado' %}active{% endif %}">
+      <span class="icon">📅</span> Agenda
+    </a>
 
     <div class="nav-section">Servicios de Lavado</div>
     <a href="{% url 'servicio_lista' %}" class="nav-item {% if request.resolver_match.url_name in 'servicio_lista,servicio_crear,servicio_eliminar' %}active{% endif %}">
@@ -170,6 +173,9 @@
     </a>
     <a href="{% url 'lista_compras' %}" class="nav-item {% if request.resolver_match.url_name in 'lista_compras,item_crear,item_toggle,item_eliminar_lista,recordatorio_crear,recordatorio_toggle,recordatorio_eliminar' %}active{% endif %}">
       <span class="icon">🛒</span> Lista de Compras
+    </a>
+    <a href="{% url 'pendiente_lista' %}" class="nav-item {% if request.resolver_match.url_name in 'pendiente_lista,pendiente_crear,pendiente_toggle,pendiente_eliminar' %}active{% endif %}">
+      <span class="icon">📌</span> Pendientes
     </a>
 
     <div class="nav-section">Tienda / Mercancía</div>
