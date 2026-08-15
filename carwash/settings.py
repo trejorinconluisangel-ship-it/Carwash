@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'comparador',
     'agenda',
     'pendientes',
+    'recepcion',
 ]
 
 MIDDLEWARE = [

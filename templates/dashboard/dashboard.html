@@ -70,6 +70,11 @@
 <div class="charts-grid mb-3">
   <div class="card">
     <div class="chart-title">📊 Ingresos y Ganancia por Día</div>
+    <div class="d-flex gap-2 mb-2" style="flex-wrap:wrap;">
+      <div><span class="text-muted" style="font-size:.72rem;">Ingresos: </span><span class="text-cyan fw-bold">${{ ingresos_totales|floatformat:2 }}</span></div>
+      <div><span class="text-muted" style="font-size:.72rem;">Ganancia: </span><span class="text-green fw-bold">${{ ganancia_total|floatformat:2 }}</span></div>
+      <div><span class="text-muted" style="font-size:.72rem;">Servicios: </span><span class="text-purple fw-bold">{{ total_servicios }}</span></div>
+    </div>
     <canvas id="chartIngresos" height="110"></canvas>
   </div>
   <div class="card">
@@ -87,6 +92,35 @@
   <div class="card">
     <div class="chart-title">🛍️ Top Productos Tienda</div>
     <canvas id="chartProductos" height="140"></canvas>
+  </div>
+</div>
+
+<!-- ── Horario y lealtad ──────────────────────────────── -->
+<div class="grid-2 mb-3">
+  <div class="card">
+    <div class="d-flex justify-between align-center mb-1" style="flex-wrap:wrap; gap:8px;">
+      <div class="chart-title mb-0">🕑 Horario con Más Afluencia</div>
+      {% if hora_pico %}<span class="badge badge-cyan">Hora pico: {{ hora_pico }}</span>{% endif %}
+    </div>
+    <div class="period-selector mb-2">
+      {% for p, label in periodo_opciones.items %}
+      <a href="?periodo={{ periodo }}&fecha={{ fecha_sel }}&periodo_horario={{ p }}"
+         class="period-btn {% if periodo_horario == p %}active{% endif %}" style="padding:4px 12px; font-size:.72rem;">
+        {{ label }}
+      </a>
+      {% endfor %}
+    </div>
+    <canvas id="chartHorario" height="140"></canvas>
+  </div>
+  <div class="card">
+    <div class="d-flex justify-between align-center mb-1">
+      <div class="chart-title mb-0">🎖️ Retorno de Clientes (Lealtad)</div>
+      {% if total_clientes_activos %}<span class="badge badge-green">{{ pct_retorno }}% regresa</span>{% endif %}
+    </div>
+    <canvas id="chartLealtad" height="140"></canvas>
+    <div class="text-muted mt-1" style="font-size:.75rem; text-align:center;">
+      {{ total_clientes_activos }} cliente{{ total_clientes_activos|pluralize }} con al menos 1 visita registrada
+    </div>
   </div>
 </div>
 
@@ -134,7 +168,7 @@
           <span class="badge badge-red">Bajo</span>
         </div>
         <div class="text-muted" style="font-size:.75rem;">
-          {{ i.stock_actual }} / Mín {{ i.stock_minimo }} {{ i.unidad_medida }}
+          {{ i.envases_en_bodega }} envase(s) / Mín {{ i.envases_stock_minimo }}
         </div>
       </div>
       {% endfor %}
@@ -242,7 +276,7 @@ new Chart(document.getElementById('chartIngresos'), {
     responsive: true,
     interaction: { mode: 'index', intersect: false },
     plugins: {
-      legend: { labels: { color: textColor, usePointStyle: true, pointStyleWidth: 10, font: { size: 11 } } },
+      legend: { labels: { color: textColor, boxWidth: 14, boxHeight: 3, font: { size: 11 } } },
       tooltip: { ...tooltipBase }
     },
     scales: {
@@ -338,6 +372,51 @@ new Chart(document.getElementById('chartProductos'), {
     scales: {
       x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
       y: { grid: { color: gridColor }, ticks: { color: ORANGE, callback: v => '$' + v } }
+    }
+  }
+});
+
+// ── 5. Horario con más afluencia ───────────────────────
+new Chart(document.getElementById('chartHorario'), {
+  type: 'bar',
+  data: {
+    labels: {{ labels_horario|safe }},
+    datasets: [{
+      label: 'Servicios',
+      data: {{ data_horario|safe }},
+      backgroundColor: 'rgba(0,212,255,0.7)', borderColor: CYAN,
+      borderWidth: 1, borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { ...tooltipBase, callbacks: { label: ctx => ` ${ctx.parsed.y} servicio(s)` } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+      y: { grid: { color: gridColor }, ticks: { color: textColor, stepSize: 1, precision: 0 } }
+    }
+  }
+});
+
+// ── 6. Retorno de clientes (programa de lealtad) ───────
+new Chart(document.getElementById('chartLealtad'), {
+  type: 'doughnut',
+  data: {
+    labels: {{ labels_lealtad|safe }},
+    datasets: [{
+      data: {{ data_lealtad|safe }},
+      backgroundColor: [RED, ORANGE, PURPLE, GREEN],
+      borderColor: '#050c18', borderWidth: 3, hoverOffset: 8,
+    }]
+  },
+  options: {
+    responsive: true, cutout: '65%',
+    plugins: {
+      legend: { position: 'bottom', labels: { color: textColor, padding: 10, usePointStyle: true, font: { size: 11 } } },
+      tooltip: { ...tooltipBase, callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} cliente(s)` } }
     }
   }
 });

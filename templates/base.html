@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
   <link rel="manifest" href="{% static 'manifest.json' %}">
   <title>{% block title %}Neowash{% endblock %} — Neowash</title>
-  <link rel="stylesheet" href="{% static 'css/carwash.css' %}?v=6">
+  <link rel="stylesheet" href="{% static 'css/carwash.css' %}?v=9">
   <style>
     /* ── Help Panel ─────────────────────────────────── */
     .help-btn {
@@ -136,19 +136,16 @@
     <a href="{% url 'agenda_calendario' %}" class="nav-item {% if request.resolver_match.url_name in 'agenda_calendario,cita_crear,cita_editar,cita_eliminar,cita_estado' %}active{% endif %}">
       <span class="icon">📅</span> Agenda
     </a>
+    <a href="{% url 'recepcion_nueva' %}" class="nav-item {% if request.resolver_match.url_name in 'recepcion_nueva,recepcion_lista,recepcion_detalle' %}active{% endif %}">
+      <span class="icon">🧾</span> Recepción
+    </a>
 
     <div class="nav-section">Servicios de Lavado</div>
     <a href="{% url 'servicio_lista' %}" class="nav-item {% if request.resolver_match.url_name in 'servicio_lista,servicio_crear,servicio_eliminar' %}active{% endif %}">
-      <span class="icon">🚿</span> Registrar Servicio
+      <span class="icon">🚿</span> Servicios Realizados
     </a>
-    <a href="{% url 'tipo_servicio_lista' %}" class="nav-item {% if 'tipo_servicio' in request.resolver_match.url_name %}active{% endif %}">
-      <span class="icon">📋</span> Tipos de Servicio
-    </a>
-    <a href="{% url 'tipo_vehiculo_lista' %}" class="nav-item {% if 'tipo_vehiculo' in request.resolver_match.url_name %}active{% endif %}">
-      <span class="icon">🏎️</span> Tipos de Vehículo
-    </a>
-    <a href="{% url 'insumo_servicio_lista' %}" class="nav-item {% if 'insumo_servicio' in request.resolver_match.url_name %}active{% endif %}">
-      <span class="icon">🔗</span> Insumos por Servicio
+    <a href="{% url 'precio_paquete_grid' %}" class="nav-item {% if request.resolver_match.url_name == 'precio_paquete_grid' or 'tipo_servicio' in request.resolver_match.url_name or 'tipo_vehiculo' in request.resolver_match.url_name %}active{% endif %}">
+      <span class="icon">💲</span> Paquetes
     </a>
 
     <div class="nav-section">Inventario Insumos</div>
@@ -236,53 +233,43 @@
     </div>
 
     <div class="help-section">
-      <div class="help-section-header">🚿 Registrar Servicio</div>
+      <div class="help-section-header">🚗 Recepción</div>
       <div class="help-section-body">
-        Aquí registras <strong>cada lavado que realizas en el día</strong>. Selecciona el tipo de servicio y el tipo de vehículo.<br><br>
-        El sistema <strong>calcula el precio sugerido automáticamente</strong> (precio base × multiplicador del vehículo). Puedes ajustarlo si cobras diferente.<br><br>
-        Al guardar, el sistema descuenta los insumos del inventario y registra el <strong>costo real de los productos usados</strong>.
+        Aquí <strong>debe pasar todo vehículo</strong> antes de lavarse. Capturas los datos del cliente, del auto, marcas rayones en el diagrama y firman ambas partes.<br><br>
+        En la sección "Servicio y Cobro" eliges el <strong>paquete</strong> y la <strong>categoría del vehículo</strong> — el precio se llena solo con el valor de <strong>Precios de Paquetes</strong>. Al dar guardar, <strong>el servicio queda cobrado de una vez</strong>: no hace falta un paso aparte.
       </div>
     </div>
 
     <div class="help-section">
-      <div class="help-section-header">📋 Tipos de Servicio</div>
+      <div class="help-section-header">🚿 Servicios Realizados</div>
       <div class="help-section-body">
-        Define los servicios que ofreces: Express, Completo, Motor, Vestiduras, etc.<br><br>
-        Cada servicio tiene un <strong>precio base</strong>. El precio final depende también del tipo de vehículo.
+        Historial de todos los cobros — se llena solo cada vez que guardas una Recepción. Aquí ves precio, costo de insumos y ganancia de cada servicio.<br><br>
+        El botón "+ Registrar Servicio" es solo para casos excepcionales que no pasaron por Recepción.
       </div>
     </div>
 
     <div class="help-section">
-      <div class="help-section-header">🏎️ Tipos de Vehículo</div>
+      <div class="help-section-header">💲 Paquetes</div>
       <div class="help-section-body">
-        Define los tipos de vehículo con su <strong>multiplicador de precio</strong>.<br><br>
-        Ejemplo: si el lavado Express cuesta $80 y la camioneta tiene multiplicador 1.5, el precio sería <strong>$80 × 1.5 = $120</strong>.
-      </div>
-    </div>
-
-    <div class="help-section">
-      <div class="help-section-header">🔗 Insumos por Servicio</div>
-      <div class="help-section-body">
-        Aquí defines <strong>cuánto de cada producto se usa en cada tipo de lavado</strong>.<br><br>
-        Ejemplo: el Lavado Express usa 0.1 litros de shampoo. Con 10 litros en stock puedes hacer <strong>100 lavados</strong>.<br><br>
-        Esta configuración es clave para que el sistema calcule automáticamente el <strong>costo de insumos por servicio</strong>.
+        Aquí escribes el <strong>precio exacto</strong> que cobras por cada paquete y categoría de vehículo — sin fórmulas ni multiplicadores, tal como lo tienes en tu lista de precios.<br><br>
+        <strong>⚙️ Configurar Paquetes</strong> crea o edita los paquetes (Neo Express, Neo Completo, etc.) y qué <strong>productos usa cada uno</strong>. <strong>🏎️ Configurar Categorías</strong> hace lo mismo con los tamaños de vehículo (compactos, pick up, camioneta familiar...). Al guardar cualquiera de los dos, regresas aquí mismo a la vista de precios.
       </div>
     </div>
 
     <div class="help-section">
       <div class="help-section-header">🧴 Insumos (Inventario)</div>
       <div class="help-section-body">
-        Lista de todos los productos que usas para lavar autos: shampoos, ceras, desengrasantes, etc.<br><br>
-        Puedes ver el <strong>stock actual</strong> y cuántos servicios puedes hacer con lo que tienes.<br><br>
-        Si el stock baja del mínimo que definas, aparece una <strong>alerta en el Dashboard</strong>.
+        Lista de todos los productos que usas para lavar autos: shampoos, ceras, abrillantadores, etc.<br><br>
+        En vez de calcular mililitros por servicio, aquí <strong>abres un envase</strong> cuando empiezas a usarlo y lo <strong>marcas como terminado</strong> cuando se acaba. El sistema cuenta solo cuántos vehículos atendió, y con eso saca el <strong>costo real por servicio</strong>.<br><br>
+        El stock ahora se mide en <strong>envases guardados en bodega</strong>, no en litros. Si bajan del mínimo que definas, aparece una <strong>alerta en el Dashboard</strong>.
       </div>
     </div>
 
     <div class="help-section">
       <div class="help-section-header">🛒 Compras / Entradas de Insumos</div>
       <div class="help-section-body">
-        Registra cada vez que <strong>compras insumos</strong> de trabajo (shampoo, ceras, etc.).<br><br>
-        Al guardar, el stock del insumo se actualiza automáticamente sumando la cantidad comprada.
+        Registra cada vez que <strong>compras insumos</strong> de trabajo (shampoo, ceras, etc.), indicando cuántos envases compraste y el costo de cada uno.<br><br>
+        Al guardar, esos envases se suman a la <strong>bodega</strong> del insumo, listos para abrirse cuando se necesiten.
       </div>
     </div>
 

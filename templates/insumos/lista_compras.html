@@ -114,9 +114,6 @@
 </div>
 
 <!-- ── Lista pendientes ──────────────────────────────────────── -->
-{% with pendientes_list=items|dictsort:"comprado" %}
-
-{% set has_pending = False %}
 {% for item in items %}{% if not item.comprado %}{% if forloop.first %}
 <p class="section-header-label">PENDIENTES</p>
 {% endif %}
@@ -203,8 +200,6 @@
   <div style="font-size:.85rem;">Agrega el primer producto usando el formulario de arriba.</div>
 </div>
 {% endif %}
-
-{% endwith %}
 
 <!-- ═══ RECORDATORIOS ═══════════════════════════════════════════ -->
 <div style="margin-top:40px;">

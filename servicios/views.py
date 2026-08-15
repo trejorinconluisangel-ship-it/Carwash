@@ -2,15 +2,38 @@ import json
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import TipoServicio, TipoVehiculo, InsumoEnServicio, Servicio
-from .forms import TipoServicioForm, TipoVehiculoForm, InsumoEnServicioForm, ServicioForm
-from clientes.models import VISITAS_PREMIO_PEQUENO, VISITAS_PREMIO_GRANDE
+from .models import TipoServicio, TipoVehiculo, Servicio, PrecioPaquete
+from .forms import TipoServicioForm, TipoVehiculoForm, ServicioForm
+from clientes.models import VISITAS_PREMIO_PEQUENO, VISITAS_PREMIO_GRANDE, TIPO_VEHICULO_CHOICES
+
+
+# Mapeo best-effort del tipo de vehículo del cliente (moto/sedan/pickup...) a una
+# categoría de precio (TipoVehiculo). Es solo una sugerencia inicial; el usuario
+# siempre puede cambiar la categoría manualmente al registrar el servicio.
+_TIPO_KEYWORDS = {
+    'moto': [],
+    'auto_chico': ['compactos'],
+    'sedan': ['sedan', 'sedán'],
+    'pickup': ['pick up', 'pick'],
+    'camioneta': ['familiar'],
+    'van': ['pasajeros'],
+    'camion': ['grande'],
+}
+
+
+def _mapear_tipo_vehiculo(codigo_cliente, tipos_vehiculo):
+    keywords = _TIPO_KEYWORDS.get(codigo_cliente, [])
+    for tv in tipos_vehiculo:
+        nombre = tv.nombre.lower()
+        if any(k in nombre for k in keywords):
+            return tv.pk
+    return None
 
 
 # ── Tipos de Servicio ────────────────────────────────────────────────────────
 
 def tipo_servicio_lista(request):
-    tipos = TipoServicio.objects.prefetch_related('insumos_requeridos__insumo').all()
+    tipos = TipoServicio.objects.prefetch_related('insumos').all()
     return render(request, 'servicios/tipo_servicio_lista.html', {'tipos': tipos})
 
 
@@ -19,7 +42,7 @@ def tipo_servicio_crear(request):
     if form.is_valid():
         form.save()
         messages.success(request, 'Tipo de servicio creado.')
-        return redirect('tipo_servicio_lista')
+        return redirect('precio_paquete_grid')
     return render(request, 'servicios/tipo_servicio_form.html', {'form': form, 'titulo': 'Nuevo Tipo de Servicio'})
 
 
@@ -29,7 +52,7 @@ def tipo_servicio_editar(request, pk):
     if form.is_valid():
         form.save()
         messages.success(request, 'Tipo de servicio actualizado.')
-        return redirect('tipo_servicio_lista')
+        return redirect('precio_paquete_grid')
     return render(request, 'servicios/tipo_servicio_form.html', {'form': form, 'titulo': 'Editar', 'obj': obj})
 
 
@@ -54,7 +77,7 @@ def tipo_vehiculo_crear(request):
     if form.is_valid():
         form.save()
         messages.success(request, 'Tipo de vehículo creado.')
-        return redirect('tipo_vehiculo_lista')
+        return redirect('precio_paquete_grid')
     return render(request, 'servicios/tipo_vehiculo_form.html', {'form': form, 'titulo': 'Nuevo Tipo de Vehículo'})
 
 
@@ -64,7 +87,7 @@ def tipo_vehiculo_editar(request, pk):
     if form.is_valid():
         form.save()
         messages.success(request, 'Tipo de vehículo actualizado.')
-        return redirect('tipo_vehiculo_lista')
+        return redirect('precio_paquete_grid')
     return render(request, 'servicios/tipo_vehiculo_form.html', {'form': form, 'titulo': 'Editar', 'obj': obj})
 
 
@@ -77,29 +100,41 @@ def tipo_vehiculo_eliminar(request, pk):
     return render(request, 'servicios/confirmar_eliminar.html', {'obj': obj, 'tipo': 'tipo de vehículo'})
 
 
-# ── Insumos en Servicio ──────────────────────────────────────────────────────
+# ── Precios de Paquetes ──────────────────────────────────────────────────────
 
-def insumo_servicio_lista(request):
-    relaciones = InsumoEnServicio.objects.select_related('tipo_servicio', 'insumo').all()
-    return render(request, 'servicios/insumo_servicio_lista.html', {'relaciones': relaciones})
+def precio_paquete_grid(request):
+    tipos_servicio = list(TipoServicio.objects.filter(activo=True))
+    tipos_vehiculo = list(TipoVehiculo.objects.filter(activo=True))
 
-
-def insumo_servicio_crear(request):
-    form = InsumoEnServicioForm(request.POST or None)
-    if form.is_valid():
-        form.save()
-        messages.success(request, 'Relación insumo-servicio creada.')
-        return redirect('insumo_servicio_lista')
-    return render(request, 'servicios/insumo_servicio_form.html', {'form': form, 'titulo': 'Asignar Insumo a Servicio'})
-
-
-def insumo_servicio_eliminar(request, pk):
-    obj = get_object_or_404(InsumoEnServicio, pk=pk)
     if request.method == 'POST':
-        obj.delete()
-        messages.success(request, 'Relación eliminada.')
-        return redirect('insumo_servicio_lista')
-    return render(request, 'servicios/confirmar_eliminar.html', {'obj': obj, 'tipo': 'relación'})
+        for ts in tipos_servicio:
+            for tv in tipos_vehiculo:
+                valor = request.POST.get(f'precio_{ts.pk}_{tv.pk}', '').strip()
+                if valor == '':
+                    continue
+                try:
+                    precio = round(float(valor), 2)
+                except ValueError:
+                    continue
+                PrecioPaquete.objects.update_or_create(
+                    tipo_servicio=ts, tipo_vehiculo=tv, defaults={'precio': precio}
+                )
+        messages.success(request, 'Precios actualizados.')
+        return redirect('precio_paquete_grid')
+
+    precios = {
+        (p.tipo_servicio_id, p.tipo_vehiculo_id): p.precio
+        for p in PrecioPaquete.objects.filter(tipo_servicio__in=tipos_servicio, tipo_vehiculo__in=tipos_vehiculo)
+    }
+    paquetes = [
+        (ts, [(tv, precios.get((ts.pk, tv.pk))) for tv in tipos_vehiculo])
+        for ts in tipos_servicio
+    ]
+
+    return render(request, 'servicios/precio_paquete_grid.html', {
+        'paquetes': paquetes,
+        'tipos_vehiculo': tipos_vehiculo,
+    })
 
 
 # ── Servicios del día ────────────────────────────────────────────────────────
@@ -111,18 +146,31 @@ def servicio_lista(request):
 
 def servicio_crear(request):
     tipos_servicio = TipoServicio.objects.filter(activo=True)
-    tipos_vehiculo = TipoVehiculo.objects.all()
+    tipos_vehiculo = TipoVehiculo.objects.filter(activo=True)
 
     # Precios sugeridos para JS: {tipo_servicio_id: {tipo_vehiculo_id: precio}}
+    precios_pp = {
+        (p.tipo_servicio_id, p.tipo_vehiculo_id): float(p.precio)
+        for p in PrecioPaquete.objects.filter(tipo_servicio__in=tipos_servicio, tipo_vehiculo__in=tipos_vehiculo)
+    }
     precios_data = {}
     for ts in tipos_servicio:
-        precios_data[ts.pk] = {'precio_base': float(ts.precio_base), 'vehiculos': {}}
+        precios_data[ts.pk] = {'vehiculos': {}}
         for tv in tipos_vehiculo:
-            precios_data[ts.pk]['vehiculos'][tv.pk] = round(float(ts.precio_base) * float(tv.multiplicador_precio), 2)
+            precios_data[ts.pk]['vehiculos'][tv.pk] = precios_pp.get((ts.pk, tv.pk), 0)
+
+    # Mapa tipo de vehículo del cliente (moto/sedan/pickup...) → TipoVehiculo (categoría de precio)
+    tipo_map = {codigo: _mapear_tipo_vehiculo(codigo, tipos_vehiculo) for codigo, _ in TIPO_VEHICULO_CHOICES}
+
+    recepcion_id = request.GET.get('recepcion') or request.POST.get('recepcion_id')
+    recepcion_obj = None
+    if recepcion_id:
+        from recepcion.models import Recepcion
+        recepcion_obj = Recepcion.objects.filter(pk=recepcion_id).first()
 
     initial = {}
     if request.method == 'GET':
-        for campo in ('cliente', 'vehiculo', 'tipo_servicio', 'fecha'):
+        for campo in ('cliente', 'vehiculo', 'tipo_servicio', 'tipo_vehiculo', 'fecha'):
             valor = request.GET.get(campo)
             if valor:
                 initial[campo] = valor
@@ -130,7 +178,11 @@ def servicio_crear(request):
     form = ServicioForm(request.POST or None, initial=initial)
     if form.is_valid():
         servicio = form.save()
-        messages.success(request, 'Servicio registrado. Stock de insumos actualizado.')
+        messages.success(request, 'Servicio registrado.')
+
+        if recepcion_obj:
+            recepcion_obj.servicio = servicio
+            recepcion_obj.save(update_fields=['servicio'])
 
         cliente = servicio.cliente
         if cliente and float(servicio.precio_cobrado or 0) > 0:
@@ -147,8 +199,10 @@ def servicio_crear(request):
         'form': form,
         'titulo': 'Registrar Servicio',
         'precios_json': json.dumps(precios_data),
+        'tipo_map_json': json.dumps(tipo_map),
         'tipos_servicio': tipos_servicio,
         'tipos_vehiculo': tipos_vehiculo,
+        'recepcion_obj': recepcion_obj,
     })
 
 
@@ -162,13 +216,8 @@ def servicio_eliminar(request, pk):
 
 
 def precio_sugerido_api(request):
-    """API simple para calcular precio sugerido en JS."""
+    """API simple para consultar el precio fijo de un paquete + categoría de vehículo."""
     ts_id = request.GET.get('tipo_servicio')
     tv_id = request.GET.get('tipo_vehiculo')
-    try:
-        ts = TipoServicio.objects.get(pk=ts_id)
-        tv = TipoVehiculo.objects.get(pk=tv_id)
-        precio = round(float(ts.precio_base) * float(tv.multiplicador_precio), 2)
-        return JsonResponse({'precio': precio})
-    except Exception:
-        return JsonResponse({'precio': 0})
+    pp = PrecioPaquete.objects.filter(tipo_servicio_id=ts_id, tipo_vehiculo_id=tv_id).first()
+    return JsonResponse({'precio': float(pp.precio) if pp else 0})

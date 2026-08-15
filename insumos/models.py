@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class Proveedor(models.Model):
@@ -45,11 +46,15 @@ class Insumo(models.Model):
     descripcion = models.TextField(blank=True)
     categoria = models.CharField(max_length=30, choices=CATEGORIA_CHOICES, default='otro')
     unidad_medida = models.CharField(max_length=20, choices=UNIDAD_CHOICES, default='litro')
-    costo_unitario = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    contenido_envase = models.DecimalField(max_digits=10, decimal_places=3, default=1,
+                                           help_text='Cuánto trae cada envase, en la unidad de medida (ej: 1 para un bote de 1 litro)')
+    costo_envase = models.DecimalField(max_digits=10, decimal_places=2, default=0,
+                                       help_text='Costo de un envase nuevo — se actualiza solo con la última compra')
+    costo_estimado_servicio = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True,
+                                                   help_text='Costo por servicio mientras no haya historial de rendimiento (opcional)')
     proveedor = models.ForeignKey(Proveedor, on_delete=models.SET_NULL, null=True, blank=True, related_name='insumos')
-    stock_actual = models.DecimalField(max_digits=10, decimal_places=3, default=0)
-    stock_minimo = models.DecimalField(max_digits=10, decimal_places=3, default=0,
-                                       help_text='Alerta si el stock baja de este nivel')
+    envases_en_bodega = models.PositiveIntegerField(default=0, help_text='Envases cerrados, sin abrir, guardados')
+    envases_stock_minimo = models.PositiveIntegerField(default=0, help_text='Alerta si los envases en bodega bajan de este nivel')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -58,23 +63,41 @@ class Insumo(models.Model):
         ordering = ['nombre']
 
     def __str__(self):
-        return f'{self.nombre} ({self.get_unidad_medida_display()})'
+        return self.nombre
 
     @property
     def stock_bajo(self):
-        return self.stock_actual <= self.stock_minimo and self.stock_minimo > 0
+        return self.envases_en_bodega <= self.envases_stock_minimo and self.envases_stock_minimo > 0
 
-    def servicios_posibles(self):
-        from servicios.models import InsumoEnServicio
-        resultados = []
-        for rel in InsumoEnServicio.objects.filter(insumo=self, cantidad_por_servicio__gt=0):
-            posibles = int(self.stock_actual / rel.cantidad_por_servicio) if rel.cantidad_por_servicio > 0 else 0
-            resultados.append({
-                'tipo_servicio': rel.tipo_servicio,
-                'posibles': posibles,
-                'uso_por_servicio': rel.cantidad_por_servicio,
-            })
-        return resultados
+    @property
+    def envase_activo(self):
+        return self.envases_uso.filter(fecha_fin__isnull=True).first()
+
+    @property
+    def envases_terminados(self):
+        return self.envases_uso.filter(fecha_fin__isnull=False)
+
+    @property
+    def rendimiento_promedio(self):
+        terminados = [e for e in self.envases_terminados if e.vehiculos_atendidos > 0]
+        if not terminados:
+            return None
+        return sum(e.vehiculos_atendidos for e in terminados) / len(terminados)
+
+    @property
+    def costo_por_servicio(self):
+        terminados = [e for e in self.envases_terminados if e.vehiculos_atendidos > 0]
+        if terminados:
+            return round(sum(e.costo_por_vehiculo for e in terminados) / len(terminados), 2)
+        return float(self.costo_estimado_servicio) if self.costo_estimado_servicio else 0.0
+
+    @property
+    def consumo_promedio_por_vehiculo(self):
+        """Cuánto (en la unidad de medida) se gasta en promedio por vehículo, según el historial real."""
+        terminados = [e for e in self.envases_terminados if e.vehiculos_atendidos > 0]
+        if not terminados:
+            return None
+        return round(sum(e.consumo_por_vehiculo for e in terminados) / len(terminados), 3)
 
 
 PRIORIDAD_LISTA = [
@@ -128,8 +151,8 @@ class Recordatorio(models.Model):
 
 class Compra(models.Model):
     insumo = models.ForeignKey(Insumo, on_delete=models.CASCADE, related_name='compras')
-    cantidad = models.DecimalField(max_digits=10, decimal_places=3)
-    costo_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    envases = models.PositiveIntegerField(default=1, help_text='Cuántos envases compraste')
+    costo_por_envase = models.DecimalField(max_digits=10, decimal_places=2)
     costo_total = models.DecimalField(max_digits=12, decimal_places=2, default=0, editable=False)
     fecha = models.DateField()
     proveedor = models.ForeignKey(Proveedor, on_delete=models.SET_NULL, null=True, blank=True)
@@ -142,12 +165,45 @@ class Compra(models.Model):
         ordering = ['-fecha', '-created_at']
 
     def __str__(self):
-        return f'{self.insumo.nombre} — {self.cantidad} {self.insumo.unidad_medida} ({self.fecha})'
+        return f'{self.insumo.nombre} — {self.envases} envase(s) ({self.fecha})'
 
     def save(self, *args, **kwargs):
-        self.costo_total = self.cantidad * self.costo_unitario
+        self.costo_total = self.envases * self.costo_por_envase
         is_new = self.pk is None
         super().save(*args, **kwargs)
         if is_new:
-            self.insumo.stock_actual += self.cantidad
-            self.insumo.save(update_fields=['stock_actual'])
+            self.insumo.envases_en_bodega += self.envases
+            self.insumo.costo_envase = self.costo_por_envase
+            self.insumo.save(update_fields=['envases_en_bodega', 'costo_envase'])
+
+
+class EnvaseEnUso(models.Model):
+    """Ciclo de vida de un envase abierto: cuenta cuántos vehículos atendió hasta agotarse."""
+    insumo = models.ForeignKey(Insumo, on_delete=models.CASCADE, related_name='envases_uso')
+    fecha_inicio = models.DateField(default=timezone.localdate)
+    fecha_fin = models.DateField(null=True, blank=True)
+    costo_envase = models.DecimalField(max_digits=10, decimal_places=2, help_text='Costo del envase al momento de abrirlo')
+    contenido_envase = models.DecimalField(max_digits=10, decimal_places=3, default=1,
+                                           help_text='Contenido del envase al momento de abrirlo, en la unidad de medida del insumo')
+    vehiculos_atendidos = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'Envase en Uso'
+        verbose_name_plural = 'Envases en Uso'
+        ordering = ['-fecha_inicio']
+
+    def __str__(self):
+        estado = 'en uso' if self.fecha_fin is None else f'terminado {self.fecha_fin}'
+        return f'{self.insumo.nombre} — abierto {self.fecha_inicio} ({estado})'
+
+    @property
+    def costo_por_vehiculo(self):
+        if self.vehiculos_atendidos <= 0:
+            return 0.0
+        return round(float(self.costo_envase) / self.vehiculos_atendidos, 2)
+
+    @property
+    def consumo_por_vehiculo(self):
+        if self.vehiculos_atendidos <= 0:
+            return 0.0
+        return round(float(self.contenido_envase) / self.vehiculos_atendidos, 3)

@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load recepcion_extras %}
+{% block title %}Recepción #{{ recepcion.pk }}{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🚗 Recepción #{{ recepcion.pk }}</div>
+    <div class="page-subtitle">{{ recepcion.fecha|date:"d/m/Y" }} · {{ recepcion.hora_recepcion|time:"H:i" }} · {{ recepcion.get_lugar_display }}</div>
+  </div>
+  <div class="d-flex gap-1">
+    {% if recepcion.servicio %}
+    <span class="badge badge-green" style="padding:9px 16px;">✅ Cobrado — ${{ recepcion.servicio.precio_cobrado }}</span>
+    {% else %}
+    <a href="{% url 'servicio_crear' %}?recepcion={{ recepcion.pk }}{% if recepcion.cliente %}&cliente={{ recepcion.cliente.pk }}{% endif %}{% if recepcion.vehiculo %}&vehiculo={{ recepcion.vehiculo.pk }}{% endif %}&fecha={{ recepcion.fecha|date:'Y-m-d' }}" class="btn btn-primary">💰 Registrar servicio</a>
+    {% endif %}
+    <a href="{% url 'recepcion_lista' %}" class="btn btn-outline">← Volver</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div style="display:flex; flex-direction:column; gap:16px;">
+
+    <div class="card card-purple">
+      <div class="chart-title">Cliente</div>
+      <div style="font-size:1.1rem; font-weight:700;">{{ recepcion.cliente.nombre|default:recepcion.cliente_nombre|default:"—" }}</div>
+      <div class="text-muted mt-1" style="font-size:.85rem;">
+        Tel: {{ recepcion.telefono|default:"—" }} ·
+        Pago: {{ recepcion.get_forma_pago_display|default:"—" }}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="chart-title">Vehículo</div>
+      <div style="font-family:monospace; font-size:1.3rem; font-weight:900; color:var(--cyan); letter-spacing:3px;">
+        {{ recepcion.placa|default:"—"|upper }}
+      </div>
+      <div class="mt-1">{{ recepcion.vehiculo_descripcion }} · {{ recepcion.color|default:"—" }}</div>
+      <div class="text-muted mt-1" style="font-size:.85rem;">
+        Km: {{ recepcion.km|default:"—" }} · Gasolina: {{ recepcion.get_gasolina_display|default:"—" }}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="chart-title">Servicio y Cobro</div>
+      <div class="d-flex gap-1" style="flex-wrap:wrap;">
+        {% if recepcion.servicio %}<span class="badge badge-purple">{{ recepcion.servicio.tipo_servicio.nombre }}</span>
+        <span class="badge badge-cyan">{{ recepcion.servicio.tipo_vehiculo.nombre }}</span>{% endif %}
+        <span class="badge badge-cyan">{{ recepcion.get_entrega_display }}</span>
+      </div>
+      {% if recepcion.servicio %}
+      <div class="mt-2" style="font-size:.9rem;">
+        <span class="text-muted">Cobrado:</span> <span class="text-green fw-bold">${{ recepcion.servicio.precio_cobrado }}</span>
+        · <span class="text-muted">Ganancia:</span> <span class="text-green fw-bold">${{ recepcion.servicio.ganancia|floatformat:2 }}</span>
+      </div>
+      {% endif %}
+      {% if recepcion.direccion_entrega %}
+      <div class="text-muted mt-2" style="font-size:.85rem;">{{ recepcion.direccion_entrega }}</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="chart-title">Verificación de valores</div>
+      {% if recepcion.retiro_valores %}
+      <span class="badge badge-green">Cliente retiró sus objetos de valor</span>
+      {% else %}
+      <span class="badge badge-gray">No confirmado</span>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="chart-title">Observaciones del cliente</div>
+      <p style="font-size:.88rem; white-space:pre-wrap;">{{ recepcion.obs_cliente|default:"—" }}</p>
+    </div>
+
+    <div class="card">
+      <div class="chart-title">Observaciones del colaborador</div>
+      <p style="font-size:.88rem; white-space:pre-wrap;">{{ recepcion.obs_colaborador|default:"—" }}</p>
+    </div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:16px;">
+    <div class="card card-cyan">
+      <div class="d-flex justify-between align-center mb-2">
+        <div class="chart-title mb-0">Diagrama del vehículo</div>
+        <span class="badge badge-cyan">{{ recepcion.get_diagrama_tipo_display }}</span>
+      </div>
+      <div class="grid-2">
+        {% for vista, titulo, ratio in diagramas %}
+        <div>
+          <div class="text-muted mb-1" style="font-size:.72rem; text-transform:uppercase; letter-spacing:1px;">{{ titulo }}</div>
+          <div class="diagrama-vista" style="aspect-ratio:{{ ratio }}; cursor:default;">
+            <img src="{% static 'img/diagramas/'|add:recepcion.diagrama_tipo|add:'_'|add:vista|add:'.png' %}" alt="{{ titulo }}">
+            <svg class="marks-layer" viewBox="0 0 100 100" preserveAspectRatio="none">
+              {% for punto in recepcion.diagrama_danos|dictget:vista %}
+              <line x1="{{ punto.0|add:'-3' }}" y1="{{ punto.1|add:'-3' }}" x2="{{ punto.0|add:'3' }}" y2="{{ punto.1|add:'3' }}" stroke="#ff3d71" stroke-width="2.4" stroke-linecap="round"/>
+              <line x1="{{ punto.0|add:'-3' }}" y1="{{ punto.1|add:'3' }}" x2="{{ punto.0|add:'3' }}" y2="{{ punto.1|add:'-3' }}" stroke="#ff3d71" stroke-width="2.4" stroke-linecap="round"/>
+              {% endfor %}
+            </svg>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="chart-title">Firmas</div>
+      <div class="grid-2">
+        <div>
+          <div class="form-label">Cliente</div>
+          {% if recepcion.firma_cliente %}
+          <img src="{{ recepcion.firma_cliente }}" alt="Firma cliente" style="width:100%; border-radius:8px; border:1px solid var(--border); background:#fff;">
+          {% else %}
+          <div class="text-muted" style="font-size:.82rem;">Sin firma</div>
+          {% endif %}
+        </div>
+        <div>
+          <div class="form-label">Neowash</div>
+          {% if recepcion.firma_colaborador %}
+          <img src="{{ recepcion.firma_colaborador }}" alt="Firma colaborador" style="width:100%; border-radius:8px; border:1px solid var(--border); background:#fff;">
+          {% else %}
+          <div class="text-muted" style="font-size:.82rem;">Sin firma</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

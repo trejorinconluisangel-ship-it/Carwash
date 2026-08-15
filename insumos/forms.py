@@ -19,27 +19,28 @@ class ProveedorForm(forms.ModelForm):
 class InsumoForm(forms.ModelForm):
     class Meta:
         model = Insumo
-        fields = ['nombre', 'descripcion', 'categoria', 'unidad_medida', 'costo_unitario', 'proveedor',
-                  'stock_minimo']
+        fields = ['nombre', 'descripcion', 'categoria', 'unidad_medida', 'contenido_envase',
+                  'costo_estimado_servicio', 'proveedor', 'envases_stock_minimo']
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Shampoo concentrado'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Abrillantador de llantas'}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'categoria': forms.Select(attrs={'class': 'form-select'}),
             'unidad_medida': forms.Select(attrs={'class': 'form-select'}),
-            'costo_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
+            'contenido_envase': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': '1'}),
+            'costo_estimado_servicio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.5', 'placeholder': 'Opcional'}),
             'proveedor': forms.Select(attrs={'class': 'form-select'}),
-            'stock_minimo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': '0'}),
+            'envases_stock_minimo': forms.NumberInput(attrs={'class': 'form-control', 'step': '1', 'placeholder': '0'}),
         }
 
 
 class CompraForm(forms.ModelForm):
     class Meta:
         model = Compra
-        fields = ['insumo', 'cantidad', 'costo_unitario', 'fecha', 'proveedor', 'notas']
+        fields = ['insumo', 'envases', 'costo_por_envase', 'fecha', 'proveedor', 'notas']
         widgets = {
             'insumo': forms.Select(attrs={'class': 'form-select'}),
-            'cantidad': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': '0'}),
-            'costo_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
+            'envases': forms.NumberInput(attrs={'class': 'form-control', 'step': '1', 'min': '1', 'placeholder': '1'}),
+            'costo_por_envase': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'proveedor': forms.Select(attrs={'class': 'form-select'}),
             'notas': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),

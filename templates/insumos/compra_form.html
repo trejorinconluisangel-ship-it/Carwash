@@ -5,7 +5,7 @@
 <div class="topbar">
   <div>
     <div class="page-title">🛒 {{ titulo }}</div>
-    <div class="page-subtitle">Al guardar, el stock del insumo se actualiza automáticamente</div>
+    <div class="page-subtitle">Al guardar, los envases se suman a la bodega del insumo automáticamente</div>
   </div>
   <a href="{% url 'compra_lista' %}" class="btn btn-outline">← Volver</a>
 </div>
@@ -25,12 +25,12 @@
     </div>
     <div class="grid-3 mt-2">
       <div>
-        <label class="form-label">Cantidad *</label>
-        {{ form.cantidad }}
+        <label class="form-label">Envases comprados *</label>
+        {{ form.envases }}
       </div>
       <div>
-        <label class="form-label">Costo unitario ($) *</label>
-        {{ form.costo_unitario }}
+        <label class="form-label">Costo por envase ($) *</label>
+        {{ form.costo_por_envase }}
       </div>
       <div>
         <label class="form-label">Total estimado</label>
@@ -55,8 +55,8 @@
 
 {% block extra_js %}
 <script>
-  const qty = document.querySelector('[name=cantidad]');
-  const cost = document.querySelector('[name=costo_unitario]');
+  const qty = document.querySelector('[name=envases]');
+  const cost = document.querySelector('[name=costo_por_envase]');
   const preview = document.getElementById('total_preview');
 
   function updateTotal() {

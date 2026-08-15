@@ -16,18 +16,18 @@
 <div class="grid-2 mb-3">
   <!-- Info principal -->
   <div class="card card-cyan">
-    <div class="chart-title">📦 Stock e Información</div>
+    <div class="chart-title">📦 Bodega e Información</div>
     <div class="kpi-grid" style="grid-template-columns:1fr 1fr; margin-bottom:0;">
       <div class="kpi-card cyan">
-        <div class="kpi-label">Stock Actual</div>
+        <div class="kpi-label">Envases en Bodega</div>
         <div class="kpi-value {% if insumo.stock_bajo %}text-red{% endif %}">
-          {{ insumo.stock_actual }}
+          {{ insumo.envases_en_bodega }}
         </div>
-        <div class="text-muted" style="font-size:.8rem;">{{ insumo.get_unidad_medida_display }}</div>
+        <div class="text-muted" style="font-size:.8rem;">de {{ insumo.contenido_envase }} {{ insumo.get_unidad_medida_display }} c/u</div>
       </div>
       <div class="kpi-card orange">
-        <div class="kpi-label">Costo Unitario</div>
-        <div class="kpi-value text-orange">${{ insumo.costo_unitario }}</div>
+        <div class="kpi-label">Costo por Envase</div>
+        <div class="kpi-value text-orange">${{ insumo.costo_envase }}</div>
       </div>
     </div>
 
@@ -45,7 +45,7 @@
 
     {% if insumo.stock_bajo %}
     <div class="alert alert-danger mt-2">
-      ⚠️ Stock bajo el mínimo definido ({{ insumo.stock_minimo }} {{ insumo.unidad_medida }})
+      ⚠️ Quedan {{ insumo.envases_en_bodega }} envase(s), por debajo del mínimo ({{ insumo.envases_stock_minimo }})
     </div>
     {% endif %}
 
@@ -54,27 +54,73 @@
     </div>
   </div>
 
-  <!-- Servicios posibles -->
+  <!-- Rendimiento -->
   <div class="card card-purple">
-    <div class="chart-title">🔢 Servicios Posibles con Stock Actual</div>
-    {% if servicios_posibles %}
-      {% for sp in servicios_posibles %}
-      <div style="padding:10px 0; border-bottom:1px solid var(--border);">
-        <div class="d-flex justify-between align-center">
-          <span class="fw-bold">{{ sp.tipo_servicio }}</span>
-          <span class="badge badge-purple">{{ sp.posibles }} servicios</span>
-        </div>
-        <div class="text-muted" style="font-size:.8rem;">
-          Usa {{ sp.uso_por_servicio }} {{ insumo.unidad_medida }} por servicio
-        </div>
+    <div class="chart-title">🔁 Rendimiento y Costo por Servicio</div>
+
+    {% if envase_activo %}
+      <div class="text-muted" style="font-size:.75rem; text-transform:uppercase; letter-spacing:1px;">Envase en uso desde {{ envase_activo.fecha_inicio|date:"d/m/Y" }}</div>
+      <div style="font-size:2.4rem; font-weight:800; color:var(--cyan); line-height:1.2;">
+        {{ envase_activo.vehiculos_atendidos }} <span style="font-size:1rem; color:var(--text-muted); font-weight:600;">vehículos atendidos</span>
       </div>
-      {% endfor %}
+      <form method="post" action="{% url 'envase_terminar' insumo.pk %}" class="mt-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline btn-sm">✅ Marcar este envase como terminado</button>
+      </form>
     {% else %}
-      <div class="text-muted" style="text-align:center; padding:20px;">
-        Este insumo no está asignado a ningún tipo de servicio aún.<br>
-        <a href="{% url 'insumo_servicio_crear' %}" class="text-cyan">Asignar ahora</a>
-      </div>
+      <div class="text-muted" style="text-align:center; padding:14px 0;">No hay un envase en uso actualmente.</div>
+      <form method="post" action="{% url 'envase_abrir' insumo.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary btn-sm" {% if insumo.envases_en_bodega <= 0 %}disabled{% endif %}>
+          📦 Abrir un envase nuevo
+        </button>
+        {% if insumo.envases_en_bodega <= 0 %}
+        <div class="text-muted mt-1" style="font-size:.75rem;">No hay envases en bodega — registra una compra primero.</div>
+        {% endif %}
+      </form>
     {% endif %}
+
+    <div class="neon-line"></div>
+
+    <div class="d-flex justify-between align-center">
+      <span class="text-muted" style="font-size:.82rem;">Rendimiento promedio</span>
+      <span class="fw-bold">{% if insumo.rendimiento_promedio %}{{ insumo.rendimiento_promedio|floatformat:1 }} vehículos/envase{% else %}Sin historial aún{% endif %}</span>
+    </div>
+    <div class="d-flex justify-between align-center mt-1">
+      <span class="text-muted" style="font-size:.82rem;">Costo por servicio {% if not insumo.rendimiento_promedio %}(estimado){% endif %}</span>
+      <span class="fw-bold text-green">${{ insumo.costo_por_servicio|floatformat:2 }}</span>
+    </div>
+    <div class="d-flex justify-between align-center mt-1">
+      <span class="text-muted" style="font-size:.82rem;">Consumo promedio por vehículo</span>
+      <span class="fw-bold text-cyan">{% if insumo.consumo_promedio_por_vehiculo %}≈ {{ insumo.consumo_promedio_por_vehiculo }} {{ insumo.get_unidad_medida_display }}{% else %}Sin historial aún{% endif %}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Historial de envases terminados -->
+<div class="card mb-3">
+  <div class="chart-title">📊 Historial de Envases Terminados</div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Abierto</th><th>Terminado</th><th>Contenido</th><th>Vehículos Atendidos</th><th>Consumo/Vehículo</th><th>Costo Envase</th><th>Costo/Vehículo</th></tr>
+      </thead>
+      <tbody>
+        {% for e in envases_terminados %}
+        <tr>
+          <td class="text-muted">{{ e.fecha_inicio|date:"d/m/Y" }}</td>
+          <td class="text-muted">{{ e.fecha_fin|date:"d/m/Y" }}</td>
+          <td class="text-muted">{{ e.contenido_envase }} {{ insumo.get_unidad_medida_display }}</td>
+          <td class="text-cyan fw-bold">{{ e.vehiculos_atendidos }}</td>
+          <td class="text-purple">{{ e.consumo_por_vehiculo }} {{ insumo.get_unidad_medida_display }}</td>
+          <td>${{ e.costo_envase }}</td>
+          <td class="text-green fw-bold">${{ e.costo_por_vehiculo|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-muted" style="text-align:center; padding:20px;">Aún no hay envases terminados</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -87,14 +133,14 @@
   <div class="table-wrapper">
     <table>
       <thead>
-        <tr><th>Fecha</th><th>Cantidad</th><th>Costo Unit.</th><th>Total</th><th>Proveedor</th><th>Notas</th></tr>
+        <tr><th>Fecha</th><th>Envases</th><th>Costo/Envase</th><th>Total</th><th>Proveedor</th><th>Notas</th></tr>
       </thead>
       <tbody>
         {% for c in compras %}
         <tr>
           <td class="text-muted">{{ c.fecha|date:"d/m/Y" }}</td>
-          <td class="text-cyan fw-bold">{{ c.cantidad }} {{ insumo.unidad_medida }}</td>
-          <td>${{ c.costo_unitario }}</td>
+          <td class="text-cyan fw-bold">{{ c.envases }}</td>
+          <td>${{ c.costo_por_envase }}</td>
           <td class="text-green fw-bold">${{ c.costo_total }}</td>
           <td class="text-muted">{{ c.proveedor|default:"—" }}</td>
           <td class="text-muted">{{ c.notas|default:"—" }}</td>

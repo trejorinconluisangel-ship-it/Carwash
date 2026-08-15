@@ -14,6 +14,8 @@ urlpatterns = [
     path('insumos/<int:pk>/', views.insumo_detalle, name='insumo_detalle'),
     path('insumos/<int:pk>/editar/', views.insumo_editar, name='insumo_editar'),
     path('insumos/<int:pk>/eliminar/', views.insumo_eliminar, name='insumo_eliminar'),
+    path('insumos/<int:pk>/envase/abrir/', views.envase_abrir, name='envase_abrir'),
+    path('insumos/<int:pk>/envase/terminar/', views.envase_terminar, name='envase_terminar'),
 
     # Compras
     path('compras/', views.compra_lista, name='compra_lista'),

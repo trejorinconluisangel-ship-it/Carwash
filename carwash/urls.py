@@ -11,4 +11,5 @@ urlpatterns = [
     path('', include('comparador.urls')),
     path('', include('agenda.urls')),
     path('', include('pendientes.urls')),
+    path('', include('recepcion.urls')),
 ]

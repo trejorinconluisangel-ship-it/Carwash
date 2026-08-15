@@ -1,0 +1,491 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Hoja de Recepción{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🚗 Hoja de Recepción</div>
+    <div class="page-subtitle">Registra la entrada del vehículo y cóbralo — todo en un solo paso</div>
+  </div>
+  <a href="{% url 'recepcion_lista' %}" class="btn btn-outline">📋 Historial</a>
+</div>
+
+<form method="post" id="recepcionForm">
+{% csrf_token %}
+<input type="hidden" name="diagrama_danos" id="id_diagrama_danos" value="{}">
+<input type="hidden" name="firma_cliente" id="id_firma_cliente">
+<input type="hidden" name="firma_colaborador" id="id_firma_colaborador">
+
+<div class="grid-2">
+  <!-- ══ COLUMNA IZQUIERDA ══════════════════════════════ -->
+  <div style="display:flex; flex-direction:column; gap:16px;">
+
+    <!-- 1. Fecha y hora -->
+    <div class="card">
+      <div class="chart-title">1️⃣ Fecha y Hora</div>
+      <div class="grid-2">
+        <div>
+          <label class="form-label">Fecha</label>
+          <input type="date" name="fecha" class="form-control" value="{{ hoy }}">
+        </div>
+        <div>
+          <label class="form-label">Hora de recepción</label>
+          <input type="time" name="hora_recepcion" class="form-control" value="{{ hora_actual }}">
+        </div>
+      </div>
+      <div class="mt-2 chip-group" data-name="lugar">
+        {% for valor, etiqueta in lugar_choices %}
+        <label class="chip {% if forloop.first %}active{% endif %}">
+          <input type="radio" name="lugar" value="{{ valor }}" {% if forloop.first %}checked{% endif %} hidden>
+          {{ etiqueta }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- 2. Datos cliente -->
+    <div class="card card-purple">
+      <div class="chart-title">2️⃣ Datos del Cliente</div>
+      <div class="chip-group" data-name="modo" id="modo_group">
+        <label class="chip active"><input type="radio" name="modo" value="registrado" checked hidden> Cliente registrado</label>
+        <label class="chip"><input type="radio" name="modo" value="nuevo" hidden> Cliente nuevo</label>
+        <label class="chip"><input type="radio" name="modo" value="espontaneo" hidden> Espontáneo</label>
+      </div>
+
+      <div id="panel_registrado" class="mt-2">
+        <label class="form-label">Cliente</label>
+        <select name="cliente_id" id="id_cliente_id" class="form-select">
+          <option value="">— Selecciona —</option>
+          {% for c in clientes %}
+          <option value="{{ c.pk }}" data-whatsapp="{{ c.whatsapp }}" data-notas="{{ c.notas|default:''|escapejs }}">{{ c.nombre }}</option>
+          {% endfor %}
+        </select>
+        <div id="cliente_notas_alerta" class="alert alert-warning mt-2" style="display:none;"></div>
+        <label class="form-label mt-2">Vehículo</label>
+        <select name="vehiculo_id" id="id_vehiculo_id" class="form-select">
+          <option value="">— Sin vehículo registrado / nuevo —</option>
+        </select>
+      </div>
+
+      <div id="panel_nuevo" class="mt-2" style="display:none;">
+        <label class="form-label">Nombre</label>
+        <input type="text" name="nombre" class="form-control" placeholder="Nombre del cliente">
+        <label class="form-label mt-2">Observaciones del cliente (opcional)</label>
+        <textarea name="notas" class="form-control" rows="2" placeholder="Ej: No le gusta el aromatizante, revisa las llantas a detalle..."></textarea>
+      </div>
+
+      <div id="panel_espontaneo" class="mt-2" style="display:none;">
+        <label class="form-label">Nombre (opcional)</label>
+        <input type="text" name="nombre" class="form-control" placeholder="Ej: Mostrador">
+      </div>
+
+      <div class="grid-2 mt-2">
+        <div>
+          <label class="form-label">Tel</label>
+          <input type="text" name="telefono" id="id_telefono" class="form-control" placeholder="10 dígitos">
+        </div>
+        <div>
+          <label class="form-label">Forma de pago</label>
+          <div class="chip-group" data-name="forma_pago">
+            {% for valor, etiqueta in forma_pago_choices %}
+            <label class="chip"><input type="radio" name="forma_pago" value="{{ valor }}" hidden> {{ etiqueta }}</label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Datos vehículo -->
+    <div class="card">
+      <div class="chart-title">3️⃣ Datos del Vehículo</div>
+      <div class="grid-3">
+        <div>
+          <label class="form-label">Placas</label>
+          <input type="text" name="placa" id="id_placa" class="form-control" style="text-transform:uppercase;">
+        </div>
+        <div>
+          <label class="form-label">Año</label>
+          <input type="number" name="anio" id="id_anio" class="form-control" min="1980" max="2100">
+        </div>
+        <div>
+          <label class="form-label">Marca</label>
+          <input type="text" name="marca" id="id_marca" class="form-control">
+        </div>
+        <div>
+          <label class="form-label">Modelo</label>
+          <input type="text" name="modelo" id="id_modelo" class="form-control">
+        </div>
+        <div>
+          <label class="form-label">Color</label>
+          <select name="color" id="id_color" class="form-select">
+            <option value="">—</option>
+            {% for valor, etiqueta in color_choices %}
+            <option value="{{ valor }}">{{ etiqueta }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Km</label>
+          <input type="number" name="km" class="form-control" min="0">
+        </div>
+      </div>
+      <label class="form-label mt-2">Gasolina</label>
+      <div class="chip-group" data-name="gasolina">
+        {% for valor, etiqueta in gasolina_choices %}
+        <label class="chip"><input type="radio" name="gasolina" value="{{ valor }}" hidden> {{ etiqueta }}</label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- 4. Servicio y cobro -->
+    <div class="card card-purple">
+      <div class="chart-title">4️⃣ Servicio y Cobro</div>
+      <label class="form-label">Paquete *</label>
+      <div class="chip-group" id="paquete_group">
+        {% for ts in tipos_servicio %}
+        <label class="chip"><input type="radio" name="tipo_servicio_id" value="{{ ts.pk }}" hidden> {{ ts.nombre }}</label>
+        {% empty %}
+        <span class="text-muted" style="font-size:.82rem;">No hay paquetes activos — configúralos en <a href="{% url 'precio_paquete_grid' %}" class="text-cyan">Precios de Paquetes</a>.</span>
+        {% endfor %}
+      </div>
+      <label class="form-label mt-2">Categoría del vehículo *</label>
+      <div class="chip-group" id="categoria_group">
+        {% for tv in tipos_vehiculo_precio %}
+        <label class="chip"><input type="radio" name="tipo_vehiculo_precio_id" value="{{ tv.pk }}" hidden> {{ tv.nombre }}</label>
+        {% endfor %}
+      </div>
+      <div class="grid-2 mt-2">
+        <div>
+          <label class="form-label">Precio sugerido</label>
+          <div id="precio_sugerido_display" class="form-control" style="color:var(--green); font-weight:700;">$0.00</div>
+        </div>
+        <div>
+          <label class="form-label">Precio a cobrar *</label>
+          <input type="number" name="precio_cobrado" id="id_precio_cobrado" class="form-control" step="0.5" min="0" placeholder="0.00">
+        </div>
+      </div>
+      <label class="form-label mt-2">Entrega</label>
+      <div class="chip-group" data-name="entrega">
+        {% for valor, etiqueta in entrega_choices %}
+        <label class="chip {% if forloop.first %}active{% endif %}">
+          <input type="radio" name="entrega" value="{{ valor }}" {% if forloop.first %}checked{% endif %} hidden>
+          {{ etiqueta }}
+        </label>
+        {% endfor %}
+      </div>
+      <div id="direccion_wrap" class="mt-2" style="display:none;">
+        <label class="form-label">Dirección</label>
+        <textarea name="direccion_entrega" class="form-control" rows="2"></textarea>
+      </div>
+    </div>
+
+    <!-- 6. Verificación de valores -->
+    <div class="card">
+      <div class="chart-title">6️⃣ Verificación de Valores</div>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:.88rem;">
+        <input type="checkbox" name="retiro_valores" class="form-check-input">
+        Cliente retiró sus objetos de valor
+      </label>
+    </div>
+  </div>
+
+  <!-- ══ COLUMNA DERECHA ═══════════════════════════════ -->
+  <div style="display:flex; flex-direction:column; gap:16px;">
+
+    <!-- 5. Diagrama vehículo -->
+    <div class="card card-cyan">
+      <div class="chart-title">5️⃣ Diagrama del Vehículo</div>
+      <div class="chip-group mb-2" id="diagrama_tipo_group">
+        {% for valor, etiqueta in diagrama_tipo_choices %}
+        <label class="chip {% if forloop.first %}active{% endif %}">
+          <input type="radio" name="diagrama_tipo" value="{{ valor }}" {% if forloop.first %}checked{% endif %} hidden>
+          {{ etiqueta }}
+        </label>
+        {% endfor %}
+      </div>
+      <div class="text-muted mb-2" style="font-size:.78rem;">Toca sobre el dibujo para marcar un rayón o golpe.</div>
+
+      {% for tipo, vistas in diagramas_config.items %}
+      <div class="diagrama-set" id="diagramas_{{ tipo }}" {% if not forloop.first %}style="display:none;"{% endif %}>
+        <div class="grid-2">
+          {% for vista, titulo, ratio in vistas %}
+          <div>
+            <div class="d-flex justify-between align-center mb-1">
+              <span class="text-muted" style="font-size:.72rem; text-transform:uppercase; letter-spacing:1px;">{{ titulo }}</span>
+              <span>
+                <button type="button" class="btn btn-outline btn-sm" id="undo_{{ tipo }}_{{ vista }}" style="padding:2px 8px;">↩</button>
+                <button type="button" class="btn btn-outline btn-sm" id="clear_{{ tipo }}_{{ vista }}" style="padding:2px 8px;">✕</button>
+              </span>
+            </div>
+            <div class="diagrama-vista" id="diagrama_{{ tipo }}_{{ vista }}" style="aspect-ratio:{{ ratio }};">
+              <img src="{% static 'img/diagramas/'|add:tipo|add:'_'|add:vista|add:'.png' %}" alt="{{ titulo }}" draggable="false">
+              <svg class="marks-layer" viewBox="0 0 100 100" preserveAspectRatio="none" id="marks_{{ tipo }}_{{ vista }}"></svg>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 7. Observaciones del cliente -->
+    <div class="card">
+      <div class="chart-title">7️⃣ Observaciones y Peticiones del Cliente</div>
+      <textarea name="obs_cliente" class="form-control" rows="3" placeholder="Ej: No tirar tickets, no aromatizante, no encender A/C, no abrir cajuela."></textarea>
+    </div>
+
+    <!-- 8. Observaciones del colaborador -->
+    <div class="card">
+      <div class="chart-title">8️⃣ Observaciones del Colaborador (Recepción)</div>
+      <textarea name="obs_colaborador" class="form-control" rows="3" placeholder="Ej: Mucho lodo interior, sin tapetes, alfombra mojada, requiere servicio extra."></textarea>
+    </div>
+
+    <!-- 9. Firmas -->
+    <div class="card">
+      <div class="chart-title">9️⃣ Firmas</div>
+      <div class="grid-2">
+        <div class="firma-pad">
+          <div class="form-label">Firma cliente</div>
+          <canvas id="canvas_firma_cliente"></canvas>
+          <button type="button" class="btn btn-outline btn-sm mt-1" id="clear_firma_cliente">Limpiar firma</button>
+        </div>
+        <div class="firma-pad">
+          <div class="form-label">Firma Neowash</div>
+          <canvas id="canvas_firma_colaborador"></canvas>
+          <button type="button" class="btn btn-outline btn-sm mt-1" id="clear_firma_colaborador">Limpiar firma</button>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:13px;">
+      ✅ Guardar recepción y cobrar
+    </button>
+  </div>
+</div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CLIENTES_SELECT = document.getElementById('id_cliente_id');
+const VEHICULO_SELECT = document.getElementById('id_vehiculo_id');
+const TELEFONO_INPUT  = document.getElementById('id_telefono');
+const PLACA_INPUT = document.getElementById('id_placa');
+const ANIO_INPUT  = document.getElementById('id_anio');
+const MARCA_INPUT = document.getElementById('id_marca');
+const MODELO_INPUT= document.getElementById('id_modelo');
+const COLOR_SELECT= document.getElementById('id_color');
+
+// ── Chips genéricos ─────────────────────────────────
+document.querySelectorAll('.chip-group').forEach(group => {
+  group.querySelectorAll('input[type=radio]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      group.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.querySelector('input').checked));
+    });
+  });
+});
+
+// ── Modo cliente: registrado / nuevo / espontáneo ───
+const paneles = {
+  registrado: document.getElementById('panel_registrado'),
+  nuevo: document.getElementById('panel_nuevo'),
+  espontaneo: document.getElementById('panel_espontaneo'),
+};
+document.getElementById('modo_group').querySelectorAll('input[type=radio]').forEach(inp => {
+  inp.addEventListener('change', () => {
+    Object.entries(paneles).forEach(([k, el]) => el.style.display = (k === inp.value) ? 'block' : 'none');
+  });
+});
+
+// ── Entrega: mostrar dirección si es a domicilio ────
+document.querySelectorAll('input[name=entrega]').forEach(inp => {
+  inp.addEventListener('change', () => {
+    document.getElementById('direccion_wrap').style.display = (inp.value === 'domicilio') ? 'block' : 'none';
+  });
+});
+
+// ── Cargar vehículos del cliente seleccionado ───────
+async function cargarVehiculos(clienteId) {
+  VEHICULO_SELECT.innerHTML = '<option value="">— Sin vehículo registrado / nuevo —</option>';
+  if (!clienteId) return;
+  try {
+    const resp = await fetch(`/api/vehiculos-cliente/?cliente_pk=${clienteId}`);
+    const data = await resp.json();
+    data.vehiculos.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.pk;
+      opt.textContent = `${v.placa.toUpperCase()} — ${v.marca} ${v.modelo || ''}`.trim();
+      opt.dataset.placa = v.placa; opt.dataset.marca = v.marca;
+      opt.dataset.modelo = v.modelo || ''; opt.dataset.color = v.color;
+      opt.dataset.tipo = v.tipo || '';
+      VEHICULO_SELECT.appendChild(opt);
+    });
+  } catch (e) { /* noop */ }
+}
+
+const NOTAS_ALERTA = document.getElementById('cliente_notas_alerta');
+
+CLIENTES_SELECT.addEventListener('change', () => {
+  const opt = CLIENTES_SELECT.options[CLIENTES_SELECT.selectedIndex];
+  TELEFONO_INPUT.value = opt ? (opt.dataset.whatsapp || '') : '';
+  const notas = opt ? (opt.dataset.notas || '') : '';
+  if (notas) {
+    NOTAS_ALERTA.textContent = '⚠️ ' + notas;
+    NOTAS_ALERTA.style.display = 'block';
+  } else {
+    NOTAS_ALERTA.style.display = 'none';
+  }
+  cargarVehiculos(CLIENTES_SELECT.value);
+});
+
+VEHICULO_SELECT.addEventListener('change', () => {
+  const opt = VEHICULO_SELECT.options[VEHICULO_SELECT.selectedIndex];
+  if (!opt || !opt.value) return;
+  PLACA_INPUT.value = opt.dataset.placa || '';
+  MARCA_INPUT.value = opt.dataset.marca || '';
+  MODELO_INPUT.value = opt.dataset.modelo || '';
+  if (opt.dataset.color) COLOR_SELECT.value = opt.dataset.color;
+  seleccionarCategoriaPorTipo(opt.dataset.tipo);
+});
+
+// ── Paquete + categoría → precio sugerido ───────────
+const PRECIOS = {{ precios_json|safe }};
+const TIPO_MAP = {{ tipo_map_json|safe }};
+const precioSugeridoDisplay = document.getElementById('precio_sugerido_display');
+const precioInput = document.getElementById('id_precio_cobrado');
+
+function calcularPrecioRecepcion() {
+  const tsInput = document.querySelector('input[name=tipo_servicio_id]:checked');
+  const tvInput = document.querySelector('input[name=tipo_vehiculo_precio_id]:checked');
+  if (!tsInput || !tvInput) return;
+  const precio = (PRECIOS[tsInput.value] && PRECIOS[tsInput.value][tvInput.value]) || 0;
+  precioSugeridoDisplay.textContent = '$' + precio.toFixed(2);
+  if (!precioInput.value || precioInput.dataset.autoset === 'true') {
+    precioInput.value = precio;
+    precioInput.dataset.autoset = 'true';
+  }
+}
+
+function seleccionarCategoriaPorTipo(tipoCliente) {
+  const tvId = TIPO_MAP[tipoCliente];
+  if (!tvId) return;
+  const radio = document.querySelector(`input[name=tipo_vehiculo_precio_id][value="${tvId}"]`);
+  if (radio) {
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change'));
+    calcularPrecioRecepcion();
+  }
+}
+
+document.querySelectorAll('input[name=tipo_servicio_id], input[name=tipo_vehiculo_precio_id]').forEach(inp => {
+  inp.addEventListener('change', calcularPrecioRecepcion);
+});
+precioInput.addEventListener('input', () => { precioInput.dataset.autoset = 'false'; });
+
+// ── Diagrama de daños (sedán / SUV / pick up, 4 vistas cada uno) ──
+const DIAGRAMA_TIPOS = [{% for valor, etiqueta in diagrama_tipo_choices %}'{{ valor }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+const DIAGRAMA_VISTAS = ['frontal', 'trasero', 'lateral_izquierdo', 'lateral_derecho'];
+const damageMarks = {};
+DIAGRAMA_TIPOS.forEach(t => {
+  damageMarks[t] = {};
+  DIAGRAMA_VISTAS.forEach(v => damageMarks[t][v] = []);
+});
+
+function renderMarks(tipo, vista) {
+  const layer = document.getElementById(`marks_${tipo}_${vista}`);
+  if (!layer) return;
+  layer.innerHTML = damageMarks[tipo][vista].map(([x, y]) => `
+    <line x1="${x-3}" y1="${y-3}" x2="${x+3}" y2="${y+3}" stroke="#ff3d71" stroke-width="2.4" stroke-linecap="round"/>
+    <line x1="${x-3}" y1="${y+3}" x2="${x+3}" y2="${y-3}" stroke="#ff3d71" stroke-width="2.4" stroke-linecap="round"/>
+  `).join('');
+}
+
+function setupDiagrama(tipo, vista) {
+  const box = document.getElementById(`diagrama_${tipo}_${vista}`);
+  if (!box) return;
+  box.addEventListener('click', e => {
+    const rect = box.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    damageMarks[tipo][vista].push([Math.round(x * 10) / 10, Math.round(y * 10) / 10]);
+    renderMarks(tipo, vista);
+  });
+  document.getElementById(`undo_${tipo}_${vista}`).addEventListener('click', () => {
+    damageMarks[tipo][vista].pop();
+    renderMarks(tipo, vista);
+  });
+  document.getElementById(`clear_${tipo}_${vista}`).addEventListener('click', () => {
+    damageMarks[tipo][vista] = [];
+    renderMarks(tipo, vista);
+  });
+}
+DIAGRAMA_TIPOS.forEach(t => DIAGRAMA_VISTAS.forEach(v => setupDiagrama(t, v)));
+
+document.getElementById('diagrama_tipo_group').querySelectorAll('input[type=radio]').forEach(inp => {
+  inp.addEventListener('change', () => {
+    DIAGRAMA_TIPOS.forEach(t => {
+      document.getElementById('diagramas_' + t).style.display = (t === inp.value) ? 'block' : 'none';
+    });
+  });
+});
+
+// ── Firmas (canvas) ─────────────────────────────────
+function setupFirma(canvasId, clearBtnId, hiddenId) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  let drawn = false;
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#e2e8f0';
+  }
+  resize();
+
+  function pos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return [e.clientX - rect.left, e.clientY - rect.top];
+  }
+
+  let dibujando = false;
+  canvas.addEventListener('pointerdown', e => {
+    dibujando = true; drawn = true;
+    canvas.setPointerCapture(e.pointerId);
+    const [x, y] = pos(e);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!dibujando) return;
+    const [x, y] = pos(e);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => canvas.addEventListener(ev, () => dibujando = false));
+
+  document.getElementById(clearBtnId).addEventListener('click', () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawn = false;
+    document.getElementById(hiddenId).value = '';
+  });
+
+  return { canvas, isDrawn: () => drawn };
+}
+
+const firmaCliente = setupFirma('canvas_firma_cliente', 'clear_firma_cliente', 'id_firma_cliente');
+const firmaColaborador = setupFirma('canvas_firma_colaborador', 'clear_firma_colaborador', 'id_firma_colaborador');
+
+document.getElementById('recepcionForm').addEventListener('submit', () => {
+  const tipoActivo = document.querySelector('input[name=diagrama_tipo]:checked').value;
+  document.getElementById('id_diagrama_danos').value = JSON.stringify(damageMarks[tipoActivo]);
+  document.getElementById('id_firma_cliente').value = firmaCliente.isDrawn() ? firmaCliente.canvas.toDataURL('image/png') : '';
+  document.getElementById('id_firma_colaborador').value = firmaColaborador.isDrawn() ? firmaColaborador.canvas.toDataURL('image/png') : '';
+});
+</script>
+{% endblock %}

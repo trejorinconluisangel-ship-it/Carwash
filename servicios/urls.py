@@ -14,10 +14,8 @@ urlpatterns = [
     path('tipos-vehiculo/<int:pk>/editar/', views.tipo_vehiculo_editar, name='tipo_vehiculo_editar'),
     path('tipos-vehiculo/<int:pk>/eliminar/', views.tipo_vehiculo_eliminar, name='tipo_vehiculo_eliminar'),
 
-    # Insumos en servicio
-    path('insumos-servicio/', views.insumo_servicio_lista, name='insumo_servicio_lista'),
-    path('insumos-servicio/nuevo/', views.insumo_servicio_crear, name='insumo_servicio_crear'),
-    path('insumos-servicio/<int:pk>/eliminar/', views.insumo_servicio_eliminar, name='insumo_servicio_eliminar'),
+    # Precios de paquetes
+    path('precios-paquete/', views.precio_paquete_grid, name='precio_paquete_grid'),
 
     # Servicios
     path('servicios/', views.servicio_lista, name='servicio_lista'),

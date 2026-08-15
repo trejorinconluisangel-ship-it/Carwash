@@ -4,7 +4,7 @@ from datetime import date, timedelta, datetime
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.db.models import Sum, Count, Avg
-from django.db.models.functions import TruncDay
+from django.db.models.functions import TruncDay, ExtractHour
 from django.utils import timezone
 
 
@@ -134,6 +134,38 @@ def dashboard(request):
     data_prod_ingresos= [float(r['total']) for r in top_productos]
     data_prod_ganancia= [float(r['gan']) for r in top_productos]
 
+    # ── Horario con más afluencia (con su propio selector de período) ──
+    periodo_horario = request.GET.get('periodo_horario', periodo)
+    inicio_horario, fin_horario = _rango_periodo(periodo_horario, fecha_ref)
+    servicios_horario_qs = Servicio.objects.filter(fecha__gte=inicio_horario, fecha__lte=fin_horario)
+
+    HORA_INICIO, HORA_FIN = 6, 21  # rango típico de operación (6:00–21:00)
+    por_hora = (
+        servicios_horario_qs
+        .annotate(hora_num=ExtractHour('hora'))
+        .values('hora_num')
+        .annotate(count=Count('id'))
+    )
+    conteo_por_hora = {r['hora_num']: r['count'] for r in por_hora}
+    labels_horario = [f'{h}:00' for h in range(HORA_INICIO, HORA_FIN + 1)]
+    data_horario = [conteo_por_hora.get(h, 0) for h in range(HORA_INICIO, HORA_FIN + 1)]
+    hora_pico = None
+    if any(data_horario):
+        idx_pico = data_horario.index(max(data_horario))
+        hora_pico = labels_horario[idx_pico]
+
+    # ── Retorno de clientes (programa de lealtad) ────────────
+    from clientes.models import Cliente, VISITAS_PREMIO_PEQUENO, VISITAS_PREMIO_GRANDE
+    clientes_activos = Cliente.objects.filter(visitas_lealtad__gte=1)
+    total_clientes_activos = clientes_activos.count()
+    bucket_1 = clientes_activos.filter(visitas_lealtad=1).count()
+    bucket_2_4 = clientes_activos.filter(visitas_lealtad__gte=2, visitas_lealtad__lt=VISITAS_PREMIO_PEQUENO).count()
+    bucket_5_9 = clientes_activos.filter(visitas_lealtad__gte=VISITAS_PREMIO_PEQUENO, visitas_lealtad__lt=VISITAS_PREMIO_GRANDE).count()
+    bucket_10mas = clientes_activos.filter(visitas_lealtad__gte=VISITAS_PREMIO_GRANDE).count()
+    labels_lealtad = ['1 visita (nuevos)', f'2-{VISITAS_PREMIO_PEQUENO - 1} visitas', f'{VISITAS_PREMIO_PEQUENO}-{VISITAS_PREMIO_GRANDE - 1} visitas', f'{VISITAS_PREMIO_GRANDE}+ visitas']
+    data_lealtad = [bucket_1, bucket_2_4, bucket_5_9, bucket_10mas]
+    pct_retorno = round((total_clientes_activos - bucket_1) / total_clientes_activos * 100, 1) if total_clientes_activos else 0
+
     # ── Alertas ─────────────────────────────────────────────
     insumos_alerta   = [i for i in Insumo.objects.all() if i.stock_bajo]
     productos_alerta = [p for p in ProductoTienda.objects.filter(activo=True) if p.stock_bajo]
@@ -176,6 +208,14 @@ def dashboard(request):
         'labels_productos': json.dumps(labels_productos),
         'data_prod_ingresos': json.dumps(data_prod_ingresos),
         'data_prod_ganancia': json.dumps(data_prod_ganancia),
+        'labels_horario': json.dumps(labels_horario),
+        'data_horario': json.dumps(data_horario),
+        'hora_pico': hora_pico,
+        'periodo_horario': periodo_horario,
+        'labels_lealtad': json.dumps(labels_lealtad),
+        'data_lealtad': json.dumps(data_lealtad),
+        'total_clientes_activos': total_clientes_activos,
+        'pct_retorno': pct_retorno,
         # Alertas
         'insumos_alerta': insumos_alerta,
         'productos_alerta': productos_alerta,
@@ -190,7 +230,7 @@ def cargar_datos_prueba(request):
         return render(request, 'dashboard/datos_prueba_confirm.html', {'accion': 'cargar'})
 
     from insumos.models import Proveedor, Insumo, Compra
-    from servicios.models import TipoServicio, TipoVehiculo, InsumoEnServicio, Servicio
+    from servicios.models import TipoServicio, TipoVehiculo, Servicio, PrecioPaquete
     from tienda.models import ProductoTienda, EntradaProducto, VentaProducto
     from clientes.models import Cliente, Vehiculo
 
@@ -202,62 +242,55 @@ def cargar_datos_prueba(request):
     prov2, _ = Proveedor.objects.get_or_create(nombre='Distribuidora Clean Pro',
         defaults={'contacto': 'Lucía Mendoza', 'telefono': '4429876543'})
 
-    # ── Insumos ──────────────────────────────────────────────
-    shampoo, _ = Insumo.objects.get_or_create(nombre='Shampoo Concentrado',
-        defaults={'categoria': 'limpieza', 'unidad_medida': 'L', 'costo_unitario': 45.00,
-                  'stock_actual': 12, 'stock_minimo': 3, 'proveedor': prov1})
-    cera, _ = Insumo.objects.get_or_create(nombre='Cera Líquida Brillante',
-        defaults={'categoria': 'acabado', 'unidad_medida': 'L', 'costo_unitario': 90.00,
-                  'stock_actual': 6, 'stock_minimo': 2, 'proveedor': prov1})
-    desengrasante, _ = Insumo.objects.get_or_create(nombre='Desengrasante Motor',
-        defaults={'categoria': 'limpieza', 'unidad_medida': 'L', 'costo_unitario': 60.00,
-                  'stock_actual': 4, 'stock_minimo': 2, 'proveedor': prov2})
-    aromatizante, _ = Insumo.objects.get_or_create(nombre='Aromatizante Cabina',
-        defaults={'categoria': 'acabado', 'unidad_medida': 'pz', 'costo_unitario': 15.00,
-                  'stock_actual': 20, 'stock_minimo': 5, 'proveedor': prov2})
-    microfibra, _ = Insumo.objects.get_or_create(nombre='Microfibra Detallado',
-        defaults={'categoria': 'herramienta', 'unidad_medida': 'pz', 'costo_unitario': 25.00,
-                  'stock_actual': 8, 'stock_minimo': 3, 'proveedor': prov2})
+    # ── Insumos (costo estimado por servicio, sin necesidad de historial de rendimiento) ──
+    shampoo, _ = Insumo.objects.get_or_create(nombre='Shampoo Concentrado (demo)',
+        defaults={'categoria': 'shampoo', 'unidad_medida': 'litro', 'costo_estimado_servicio': 8.00,
+                  'envases_en_bodega': 4, 'envases_stock_minimo': 1, 'proveedor': prov1})
+    cera, _ = Insumo.objects.get_or_create(nombre='Cera Líquida Brillante (demo)',
+        defaults={'categoria': 'cera', 'unidad_medida': 'litro', 'costo_estimado_servicio': 15.00,
+                  'envases_en_bodega': 2, 'envases_stock_minimo': 1, 'proveedor': prov1})
+    desengrasante, _ = Insumo.objects.get_or_create(nombre='Desengrasante Motor (demo)',
+        defaults={'categoria': 'desengrasante', 'unidad_medida': 'litro', 'costo_estimado_servicio': 12.00,
+                  'envases_en_bodega': 2, 'envases_stock_minimo': 1, 'proveedor': prov2})
+    aromatizante, _ = Insumo.objects.get_or_create(nombre='Aromatizante Cabina (demo)',
+        defaults={'categoria': 'aromatizante', 'unidad_medida': 'pieza', 'costo_estimado_servicio': 5.00,
+                  'envases_en_bodega': 8, 'envases_stock_minimo': 2, 'proveedor': prov2})
+    microfibra, _ = Insumo.objects.get_or_create(nombre='Microfibra Detallado (demo)',
+        defaults={'categoria': 'microfibra', 'unidad_medida': 'pieza', 'costo_estimado_servicio': 3.00,
+                  'envases_en_bodega': 5, 'envases_stock_minimo': 2, 'proveedor': prov2})
 
-    # ── Tipos de Servicio ────────────────────────────────────
-    express, _ = TipoServicio.objects.get_or_create(nombre='Express Exterior',
-        defaults={'precio_base': 80.00, 'descripcion': 'Lavado rápido solo exterior'})
-    completo, _ = TipoServicio.objects.get_or_create(nombre='Lavado Completo',
-        defaults={'precio_base': 150.00, 'descripcion': 'Interior y exterior con aspirado'})
-    motor_ts, _ = TipoServicio.objects.get_or_create(nombre='Detallado de Motor',
-        defaults={'precio_base': 200.00, 'descripcion': 'Limpieza profunda de motor'})
-    vestiduras, _ = TipoServicio.objects.get_or_create(nombre='Lavado de Vestiduras',
-        defaults={'precio_base': 300.00, 'descripcion': 'Limpieza de asientos y tapetes'})
+    # ── Tipos de Servicio (paquetes de demo, inactivos para no mezclarse con los reales) ──
+    express, _ = TipoServicio.objects.get_or_create(nombre='Express Exterior (demo)',
+        defaults={'descripcion': 'Lavado rápido solo exterior', 'activo': False})
+    completo, _ = TipoServicio.objects.get_or_create(nombre='Lavado Completo (demo)',
+        defaults={'descripcion': 'Interior y exterior con aspirado', 'activo': False})
+    motor_ts, _ = TipoServicio.objects.get_or_create(nombre='Detallado de Motor (demo)',
+        defaults={'descripcion': 'Limpieza profunda de motor', 'activo': False})
+    vestiduras, _ = TipoServicio.objects.get_or_create(nombre='Lavado de Vestiduras (demo)',
+        defaults={'descripcion': 'Limpieza de asientos y tapetes', 'activo': False})
 
-    # ── Tipos de Vehículo ────────────────────────────────────
-    moto, _ = TipoVehiculo.objects.get_or_create(nombre='Moto',
-        defaults={'multiplicador_precio': 0.70})
-    auto, _ = TipoVehiculo.objects.get_or_create(nombre='Auto Pequeño',
-        defaults={'multiplicador_precio': 1.00})
-    pickup, _ = TipoVehiculo.objects.get_or_create(nombre='Pick Up',
-        defaults={'multiplicador_precio': 1.30})
-    camioneta, _ = TipoVehiculo.objects.get_or_create(nombre='Camioneta Grande',
-        defaults={'multiplicador_precio': 1.50})
-    van, _ = TipoVehiculo.objects.get_or_create(nombre='Van / Combi',
-        defaults={'multiplicador_precio': 1.60})
+    # ── Tipos de Vehículo (demo, inactivos) ───────────────────
+    moto, _ = TipoVehiculo.objects.get_or_create(nombre='Moto (demo)', defaults={'activo': False})
+    auto, _ = TipoVehiculo.objects.get_or_create(nombre='Auto Pequeño (demo)', defaults={'activo': False})
+    pickup, _ = TipoVehiculo.objects.get_or_create(nombre='Pick Up (demo)', defaults={'activo': False})
+    camioneta, _ = TipoVehiculo.objects.get_or_create(nombre='Camioneta Grande (demo)', defaults={'activo': False})
+    van, _ = TipoVehiculo.objects.get_or_create(nombre='Van / Combi (demo)', defaults={'activo': False})
 
-    # ── Insumos por Servicio ─────────────────────────────────
-    InsumoEnServicio.objects.get_or_create(tipo_servicio=express, insumo=shampoo,
-        defaults={'cantidad_por_servicio': 0.10})
-    InsumoEnServicio.objects.get_or_create(tipo_servicio=express, insumo=aromatizante,
-        defaults={'cantidad_por_servicio': 1})
-    InsumoEnServicio.objects.get_or_create(tipo_servicio=completo, insumo=shampoo,
-        defaults={'cantidad_por_servicio': 0.20})
-    InsumoEnServicio.objects.get_or_create(tipo_servicio=completo, insumo=cera,
-        defaults={'cantidad_por_servicio': 0.10})
-    InsumoEnServicio.objects.get_or_create(tipo_servicio=completo, insumo=aromatizante,
-        defaults={'cantidad_por_servicio': 1})
-    InsumoEnServicio.objects.get_or_create(tipo_servicio=motor_ts, insumo=desengrasante,
-        defaults={'cantidad_por_servicio': 0.30})
-    InsumoEnServicio.objects.get_or_create(tipo_servicio=vestiduras, insumo=microfibra,
-        defaults={'cantidad_por_servicio': 2})
-    InsumoEnServicio.objects.get_or_create(tipo_servicio=vestiduras, insumo=aromatizante,
-        defaults={'cantidad_por_servicio': 1})
+    # ── Precios de demo (para que el dashboard tenga ganancias que graficar) ──
+    precios_demo = {
+        (express, auto): 80, (express, moto): 60, (express, pickup): 100,
+        (express, camioneta): 110, (completo, auto): 150, (completo, pickup): 180,
+        (completo, camioneta): 200, (motor_ts, pickup): 220, (motor_ts, camioneta): 240,
+        (vestiduras, auto): 250, (vestiduras, camioneta): 300,
+    }
+    for (ts, tv), precio in precios_demo.items():
+        PrecioPaquete.objects.get_or_create(tipo_servicio=ts, tipo_vehiculo=tv, defaults={'precio': precio})
+
+    # ── Productos que usa cada paquete ────────────────────────
+    express.insumos.add(shampoo, aromatizante)
+    completo.insumos.add(shampoo, cera, aromatizante)
+    motor_ts.insumos.add(desengrasante)
+    vestiduras.insumos.add(microfibra, aromatizante)
 
     # ── Clientes y Vehículos ─────────────────────────────────
     c1, _ = Cliente.objects.get_or_create(nombre='Carlos Ramírez',
@@ -277,6 +310,7 @@ def cargar_datos_prueba(request):
 
     # ── Servicios de los últimos 30 días ─────────────────────
     servicios_data = [
+        (0, express, auto), (0, completo, camioneta), (1, express, pickup),
         (2, express, auto), (3, completo, auto), (5, express, pickup),
         (5, motor_ts, pickup), (7, express, auto), (8, completo, camioneta),
         (10, express, moto), (10, express, auto), (12, vestiduras, auto),
@@ -287,14 +321,10 @@ def cargar_datos_prueba(request):
     ]
     for dias_atras, tipo_s, tipo_v in servicios_data:
         fecha_s = hoy - timedelta(days=dias_atras)
-        precio = round(float(tipo_s.precio_base) * float(tipo_v.multiplicador_precio), 2)
-        costo = sum(
-            float(rel.cantidad_por_servicio) * float(rel.insumo.costo_unitario)
-            for rel in InsumoEnServicio.objects.filter(tipo_servicio=tipo_s).select_related('insumo')
-        )
+        precio = precios_demo.get((tipo_s, tipo_v), 100)
         Servicio.objects.get_or_create(
             fecha=fecha_s, tipo_servicio=tipo_s, tipo_vehiculo=tipo_v, precio_cobrado=precio,
-            defaults={'costo_insumos': round(costo, 2), 'notas': 'Dato de prueba'}
+            defaults={'notas': 'Dato de prueba'}
         )
 
     # ── Productos Tienda ─────────────────────────────────────
@@ -343,7 +373,7 @@ def limpiar_todos_datos(request):
         return render(request, 'dashboard/datos_prueba_confirm.html', ctx)
 
     from insumos.models import Proveedor, Insumo, Compra
-    from servicios.models import TipoServicio, TipoVehiculo, InsumoEnServicio, Servicio
+    from servicios.models import TipoServicio, TipoVehiculo, Servicio
     from tienda.models import ProductoTienda, EntradaProducto, VentaProducto
     from clientes.models import Cliente, Vehiculo
 
@@ -351,7 +381,6 @@ def limpiar_todos_datos(request):
     VentaProducto.objects.all().delete()
     EntradaProducto.objects.all().delete()
     Compra.objects.all().delete()
-    InsumoEnServicio.objects.all().delete()
     Vehiculo.objects.all().delete()
     Cliente.objects.all().delete()
     Insumo.objects.all().delete()

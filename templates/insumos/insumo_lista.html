@@ -17,9 +17,10 @@
         <tr>
           <th>Nombre</th>
           <th>Categoría</th>
-          <th>Unidad</th>
-          <th>Costo Unit.</th>
-          <th>Stock Actual</th>
+          <th>Contenido</th>
+          <th>Costo/Envase</th>
+          <th>Envases en Bodega</th>
+          <th>Costo por Servicio</th>
           <th>Estado</th>
           <th>Proveedor</th>
           <th>Acciones</th>
@@ -32,14 +33,14 @@
             <a href="{% url 'insumo_detalle' i.pk %}" class="text-cyan fw-bold">{{ i.nombre }}</a>
           </td>
           <td><span class="badge badge-purple">{{ i.get_categoria_display }}</span></td>
-          <td class="text-muted">{{ i.get_unidad_medida_display }}</td>
-          <td class="text-orange">${{ i.costo_unitario }}</td>
+          <td class="text-muted">{{ i.contenido_envase }} {{ i.get_unidad_medida_display }}</td>
+          <td class="text-orange">${{ i.costo_envase }}</td>
           <td>
             <span class="fw-bold {% if i.stock_bajo %}text-red{% else %}text-green{% endif %}">
-              {{ i.stock_actual }}
+              {{ i.envases_en_bodega }}
             </span>
-            <span class="text-muted" style="font-size:.8rem;"> {{ i.unidad_medida }}</span>
           </td>
+          <td class="text-cyan fw-bold">${{ i.costo_por_servicio|floatformat:2 }}</td>
           <td>
             {% if i.stock_bajo %}
               <span class="badge badge-red">⚠ Bajo</span>
@@ -65,7 +66,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="8" style="text-align:center; padding:40px; color:var(--text-muted);">
+          <td colspan="9" style="text-align:center; padding:40px; color:var(--text-muted);">
             No hay insumos registrados.
             <a href="{% url 'insumo_crear' %}" class="text-cyan">Agrega el primero.</a>
           </td>

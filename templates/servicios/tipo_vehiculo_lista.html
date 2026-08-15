@@ -5,9 +5,12 @@
 <div class="topbar">
   <div>
     <div class="page-title">🏎️ Tipos de Vehículo</div>
-    <div class="page-subtitle">Define los vehículos y su multiplicador de precio</div>
+    <div class="page-subtitle">Define las categorías de vehículo — los precios se editan en "Precios de Paquetes"</div>
   </div>
-  <a href="{% url 'tipo_vehiculo_crear' %}" class="btn btn-primary">+ Nuevo Vehículo</a>
+  <div class="d-flex gap-1">
+    <a href="{% url 'precio_paquete_grid' %}" class="btn btn-outline">← Volver a Precios</a>
+    <a href="{% url 'tipo_vehiculo_crear' %}" class="btn btn-primary">+ Nuevo Vehículo</a>
+  </div>
 </div>
 
 <div class="card">
@@ -15,9 +18,8 @@
     <table>
       <thead>
         <tr>
-          <th>Vehículo</th>
-          <th>Multiplicador</th>
-          <th>Ejemplo: Precio Base $100</th>
+          <th>Categoría</th>
+          <th>Estado</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -25,8 +27,13 @@
         {% for t in tipos %}
         <tr>
           <td class="fw-bold">{{ t.nombre }}</td>
-          <td><span class="badge badge-purple">×{{ t.multiplicador_precio }}</span></td>
-          <td class="text-green">${{ 100|floatformat:0 }} × {{ t.multiplicador_precio }} = <strong>${{ t.multiplicador_precio|floatformat:0 }}0</strong></td>
+          <td>
+            {% if t.activo %}
+              <span class="badge badge-green">Activo</span>
+            {% else %}
+              <span class="badge badge-gray">Inactivo</span>
+            {% endif %}
+          </td>
           <td>
             <div class="d-flex gap-1">
               <a href="{% url 'tipo_vehiculo_editar' t.pk %}" class="btn btn-outline btn-sm">Editar</a>
@@ -36,7 +43,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="4" style="text-align:center; padding:40px; color:var(--text-muted);">
+          <td colspan="3" style="text-align:center; padding:40px; color:var(--text-muted);">
             No hay tipos de vehículo. <a href="{% url 'tipo_vehiculo_crear' %}" class="text-cyan">Crea uno ahora.</a>
           </td>
         </tr>

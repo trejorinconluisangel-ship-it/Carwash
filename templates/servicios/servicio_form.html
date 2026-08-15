@@ -10,8 +10,16 @@
   <a href="{% url 'servicio_lista' %}" class="btn btn-outline">← Volver</a>
 </div>
 
+{% if recepcion_obj %}
+<div class="alert alert-info">
+  🧾 Datos cargados de la <a href="{% url 'recepcion_detalle' recepcion_obj.pk %}" class="text-cyan">recepción #{{ recepcion_obj.pk }}</a> —
+  {{ recepcion_obj.vehiculo_descripcion }} {% if recepcion_obj.placa %}· {{ recepcion_obj.placa|upper }}{% endif %}
+</div>
+{% endif %}
+
 <form method="post" id="servicioForm">
 {% csrf_token %}
+{% if recepcion_obj %}<input type="hidden" name="recepcion_id" value="{{ recepcion_obj.pk }}">{% endif %}
 <div class="form-layout-2col">
 
   <!-- ── Columna izquierda: datos del servicio ─────── -->
@@ -93,7 +101,7 @@
       <div id="precio_display" style="font-size:2.8rem; font-weight:800; color:var(--green); text-shadow:0 0 20px rgba(0,255,136,0.5); line-height:1;">
         $0.00
       </div>
-      <div class="text-muted mt-1" style="font-size:.78rem;">Precio base × multiplicador vehículo</div>
+      <div class="text-muted mt-1" style="font-size:.78rem;">Precio fijo del paquete para este tipo de vehículo</div>
     </div>
 
     <!-- Vehículo seleccionado (resumen) -->
@@ -104,7 +112,7 @@
 
     <!-- Insumos que se usarán -->
     <div class="card" style="border-color:rgba(168,85,247,0.2);">
-      <div class="chart-title">🧴 Insumos a Descontar</div>
+      <div class="chart-title">🧴 Productos que se Usarán</div>
       <div id="insumos_preview">
         <div class="text-muted" style="text-align:center; padding:12px; font-size:.82rem;">
           Selecciona tipo de servicio
@@ -123,23 +131,15 @@ const PRECIOS  = {{ precios_json|safe }};
 const INSUMOS  = {
   {% for ts in tipos_servicio %}
   "{{ ts.pk }}": [
-    {% for ir in ts.insumos_requeridos.all %}
-    { nombre: "{{ ir.insumo.nombre }}", cantidad: "{{ ir.cantidad_por_servicio }}", unidad: "{{ ir.insumo.get_unidad_medida_display }}", stock: "{{ ir.insumo.stock_actual }}" },
+    {% for i in ts.insumos.all %}
+    { nombre: "{{ i.nombre }}", costo: {{ i.costo_por_servicio|floatformat:2 }}, tieneEnvase: {% if i.envase_activo %}true{% else %}false{% endif %} },
     {% endfor %}
   ],
   {% endfor %}
 };
 
 // Mapa tipo vehiculo_local (texto) → TipoVehiculo id para auto-completar
-const TIPO_MAP = {
-  'moto':      {% for tv in tipos_vehiculo %}{% if tv.nombre|lower == 'moto' %}'{{ tv.pk }}'{% endif %}{% endfor %},
-  'auto_chico':{% for tv in tipos_vehiculo %}{% if 'pequeño' in tv.nombre|lower or 'chico' in tv.nombre|lower %}'{{ tv.pk }}'{% endif %}{% endfor %},
-  'sedan':     {% for tv in tipos_vehiculo %}{% if 'sedan' in tv.nombre|lower or 'sedán' in tv.nombre|lower %}'{{ tv.pk }}'{% endif %}{% endfor %},
-  'pickup':    {% for tv in tipos_vehiculo %}{% if 'pick' in tv.nombre|lower %}'{{ tv.pk }}'{% endif %}{% endfor %},
-  'camioneta': {% for tv in tipos_vehiculo %}{% if 'camioneta' in tv.nombre|lower or 'suv' in tv.nombre|lower %}'{{ tv.pk }}'{% endif %}{% endfor %},
-  'van':       {% for tv in tipos_vehiculo %}{% if 'van' in tv.nombre|lower %}'{{ tv.pk }}'{% endif %}{% endfor %},
-  'camion':    {% for tv in tipos_vehiculo %}{% if 'camión' in tv.nombre|lower or 'camion' in tv.nombre|lower %}'{{ tv.pk }}'{% endif %}{% endfor %},
-};
+const TIPO_MAP = {{ tipo_map_json|safe }};
 
 const selServicio = document.getElementById('id_tipo_servicio');
 const selVehiculo = document.getElementById('id_tipo_vehiculo');
@@ -174,13 +174,12 @@ function mostrarInsumos(tsId) {
   }
   let html = '';
   INSUMOS[tsId].forEach(i => {
-    const posibles = i.cantidad > 0 ? Math.floor(parseFloat(i.stock) / parseFloat(i.cantidad)) : '—';
     html += `<div style="padding:7px 0; border-bottom:1px solid var(--border);">
       <div class="d-flex justify-between align-center">
         <span style="font-size:.83rem;">${i.nombre}</span>
-        <span class="badge badge-purple" style="font-size:.68rem;">${posibles} lavados</span>
+        <span class="badge badge-purple" style="font-size:.68rem;">$${i.costo.toFixed(2)}/servicio</span>
       </div>
-      <div class="text-muted" style="font-size:.75rem;">Usa ${i.cantidad} ${i.unidad} · Stock: ${i.stock}</div>
+      ${!i.tieneEnvase ? '<div class="text-orange" style="font-size:.72rem;">⚠ Sin envase abierto — no se contará este servicio</div>' : ''}
     </div>`;
   });
   insumosDiv.innerHTML = html;

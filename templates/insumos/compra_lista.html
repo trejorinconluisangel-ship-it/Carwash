@@ -28,8 +28,8 @@
         <tr>
           <th>Fecha</th>
           <th>Insumo</th>
-          <th>Cantidad</th>
-          <th>Costo Unit.</th>
+          <th>Envases</th>
+          <th>Costo/Envase</th>
           <th>Total</th>
           <th>Proveedor</th>
           <th>Notas</th>
@@ -41,8 +41,8 @@
         <tr>
           <td class="text-muted">{{ c.fecha|date:"d/m/Y" }}</td>
           <td><a href="{% url 'insumo_detalle' c.insumo.pk %}" class="text-cyan fw-bold">{{ c.insumo.nombre }}</a></td>
-          <td class="text-cyan">{{ c.cantidad }} {{ c.insumo.unidad_medida }}</td>
-          <td>${{ c.costo_unitario }}</td>
+          <td class="text-cyan">{{ c.envases }}</td>
+          <td>${{ c.costo_por_envase }}</td>
           <td class="text-green fw-bold">${{ c.costo_total }}</td>
           <td class="text-muted">{{ c.proveedor|default:"—" }}</td>
           <td class="text-muted" style="font-size:.8rem;">{{ c.notas|default:"—"|truncatechars:40 }}</td>

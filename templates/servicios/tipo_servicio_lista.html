@@ -5,9 +5,12 @@
 <div class="topbar">
   <div>
     <div class="page-title">📋 Tipos de Servicio</div>
-    <div class="page-subtitle">Define los servicios que ofrece tu autolavado</div>
+    <div class="page-subtitle">Define los paquetes que ofrece tu autolavado — los precios se configuran en "Precios de Paquetes"</div>
   </div>
-  <a href="{% url 'tipo_servicio_crear' %}" class="btn btn-primary">+ Nuevo Tipo</a>
+  <div class="d-flex gap-1">
+    <a href="{% url 'precio_paquete_grid' %}" class="btn btn-outline">← Volver a Precios</a>
+    <a href="{% url 'tipo_servicio_crear' %}" class="btn btn-primary">+ Nuevo Tipo</a>
+  </div>
 </div>
 
 <div class="card">
@@ -17,8 +20,8 @@
         <tr>
           <th>Servicio</th>
           <th>Descripción</th>
-          <th>Precio Base</th>
-          <th>Insumos Requeridos</th>
+          <th>Productos que Usa</th>
+          <th>Costo Estimado</th>
           <th>Estado</th>
           <th>Acciones</th>
         </tr>
@@ -28,14 +31,14 @@
         <tr>
           <td class="fw-bold">{{ t.nombre }}</td>
           <td class="text-muted" style="font-size:.85rem;">{{ t.descripcion|default:"—"|truncatechars:60 }}</td>
-          <td class="text-green fw-bold">${{ t.precio_base }}</td>
           <td>
-            {% for ir in t.insumos_requeridos.all %}
-              <span class="badge badge-cyan" style="margin:2px;">{{ ir.insumo.nombre }} ×{{ ir.cantidad_por_servicio }}</span>
+            {% for i in t.insumos.all %}
+              <span class="badge badge-cyan" style="margin:2px;">{{ i.nombre }}</span>
             {% empty %}
-              <span class="text-muted" style="font-size:.8rem;">Sin insumos asignados</span>
+              <span class="text-muted" style="font-size:.8rem;">Sin productos asignados</span>
             {% endfor %}
           </td>
+          <td class="text-green fw-bold">${{ t.costo_estimado_total|floatformat:2 }}</td>
           <td>
             {% if t.activo %}
               <span class="badge badge-green"><span class="glow-dot" style="width:6px;height:6px;margin-right:4px;display:inline-block;"></span> Activo</span>

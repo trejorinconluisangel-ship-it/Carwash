@@ -5,9 +5,9 @@
 <div class="topbar">
   <div>
     <div class="page-title">🚿 Servicios Realizados</div>
-    <div class="page-subtitle">Historial con costo de insumos y ganancia por servicio</div>
+    <div class="page-subtitle">Se llena solo desde Recepción — historial con costo de insumos y ganancia por servicio</div>
   </div>
-  <a href="{% url 'servicio_crear' %}" class="btn btn-primary">+ Registrar Servicio</a>
+  <a href="{% url 'servicio_crear' %}" class="btn btn-outline">+ Registrar manualmente</a>
 </div>
 
 <div class="card">
@@ -44,8 +44,7 @@
         {% empty %}
         <tr>
           <td colspan="9" style="text-align:center; padding:40px; color:var(--text-muted);">
-            No hay servicios registrados.
-            <a href="{% url 'servicio_crear' %}" class="text-cyan">Registra el primero.</a>
+            No hay servicios registrados. Se crean solos al guardar una <a href="{% url 'recepcion_nueva' %}" class="text-cyan">Recepción</a>.
           </td>
         </tr>
         {% endfor %}

@@ -1,37 +1,28 @@
 from django import forms
-from .models import TipoServicio, TipoVehiculo, InsumoEnServicio, Servicio
+from .models import TipoServicio, TipoVehiculo, Servicio
 
 
 class TipoServicioForm(forms.ModelForm):
     class Meta:
         model = TipoServicio
-        fields = ['nombre', 'descripcion', 'precio_base', 'activo']
+        fields = ['nombre', 'descripcion', 'orden', 'activo', 'insumos']
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Lavado Express Exterior'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Neo Express'}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'precio_base': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.50', 'placeholder': '0.00'}),
+            'orden': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'insumos': forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
         }
 
 
 class TipoVehiculoForm(forms.ModelForm):
     class Meta:
         model = TipoVehiculo
-        fields = ['nombre', 'multiplicador_precio']
+        fields = ['nombre', 'orden', 'activo']
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Camioneta / SUV'}),
-            'multiplicador_precio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': '0.5', 'max': '5'}),
-        }
-
-
-class InsumoEnServicioForm(forms.ModelForm):
-    class Meta:
-        model = InsumoEnServicio
-        fields = ['tipo_servicio', 'insumo', 'cantidad_por_servicio']
-        widgets = {
-            'tipo_servicio': forms.Select(attrs={'class': 'form-select'}),
-            'insumo': forms.Select(attrs={'class': 'form-select'}),
-            'cantidad_por_servicio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': '0.000'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Camioneta familiar'}),
+            'orden': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 

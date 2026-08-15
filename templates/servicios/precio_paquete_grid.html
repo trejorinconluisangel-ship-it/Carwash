@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Precios de Paquetes{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">💲 Precios de Paquetes</div>
+    <div class="page-subtitle">El precio exacto que cobras por cada paquete y tamaño de vehículo</div>
+  </div>
+  <div class="d-flex gap-1">
+    <a href="{% url 'tipo_vehiculo_lista' %}" class="btn btn-outline">🏎️ Configurar Categorías</a>
+    <a href="{% url 'tipo_servicio_lista' %}" class="btn btn-outline">⚙️ Configurar Paquetes</a>
+  </div>
+</div>
+
+{% if not paquetes %}
+<div class="card">
+  <div style="text-align:center; padding:40px; color:var(--text-muted);">
+    Primero crea al menos un <a href="{% url 'tipo_servicio_crear' %}" class="text-cyan">paquete</a>
+    y una <a href="{% url 'tipo_vehiculo_crear' %}" class="text-cyan">categoría de vehículo</a> activos.
+  </div>
+</div>
+{% elif not tipos_vehiculo %}
+<div class="card">
+  <div style="text-align:center; padding:40px; color:var(--text-muted);">
+    No hay categorías de vehículo activas. <a href="{% url 'tipo_vehiculo_crear' %}" class="text-cyan">Crea una.</a>
+  </div>
+</div>
+{% else %}
+<form method="post">
+  {% csrf_token %}
+  <div class="grid-2">
+    {% for ts, filas in paquetes %}
+    <div class="card {% cycle 'card-purple' 'card-cyan' %}">
+      <div class="chart-title">{{ ts.nombre }}</div>
+      {% if ts.descripcion %}
+      <div class="text-muted mb-2" style="font-size:.8rem;">{{ ts.descripcion }}</div>
+      {% endif %}
+      <div class="precio-grid-rows">
+        {% for tv, precio in filas %}
+        <div class="precio-grid-row">
+          <span>{{ tv.nombre }}</span>
+          <div class="precio-grid-input">
+            <span class="text-muted">$</span>
+            <input type="number" step="0.5" min="0" class="form-control"
+                   name="precio_{{ ts.pk }}_{{ tv.pk }}" value="{{ precio|default_if_none:'' }}" placeholder="0.00">
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <button type="submit" class="btn btn-primary mt-3" style="width:100%; justify-content:center; padding:13px;">
+    💾 Guardar precios
+  </button>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Recepciones{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">🚗 Hojas de Recepción</div>
+    <div class="page-subtitle">Historial de vehículos recibidos — busca por cliente, placa o fecha para cualquier aclaración</div>
+  </div>
+  <a href="{% url 'recepcion_nueva' %}" class="btn btn-primary">+ Nueva Recepción</a>
+</div>
+
+<!-- Buscador -->
+<form method="get" class="card mb-3" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+  <div style="flex:1; min-width:220px;">
+    <label class="text-muted" style="font-size:.78rem; display:block; margin-bottom:4px;">Cliente, placa, tel, marca o modelo</label>
+    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Buscar..." autocomplete="off">
+  </div>
+  <div>
+    <label class="text-muted" style="font-size:.78rem; display:block; margin-bottom:4px;">Desde</label>
+    <input type="date" name="fecha_desde" value="{{ fecha_desde }}" class="form-control">
+  </div>
+  <div>
+    <label class="text-muted" style="font-size:.78rem; display:block; margin-bottom:4px;">Hasta</label>
+    <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}" class="form-control">
+  </div>
+  <label class="d-flex gap-1" style="align-items:center; font-size:.85rem; white-space:nowrap; padding-bottom:9px;">
+    <input type="checkbox" name="solo_obs" value="1" {% if solo_obs %}checked{% endif %}> Solo con observaciones
+  </label>
+  <button class="btn btn-outline" type="submit" style="white-space:nowrap;">🔍 Buscar</button>
+  {% if q or fecha_desde or fecha_hasta or solo_obs %}<a href="{% url 'recepcion_lista' %}" class="btn btn-outline">✕</a>{% endif %}
+</form>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Hora</th>
+          <th>Cliente</th>
+          <th>Placas</th>
+          <th>Vehículo</th>
+          <th>Paquete</th>
+          <th>Cobrado</th>
+          <th>Observaciones</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in recepciones %}
+        <tr>
+          <td class="text-muted">{{ r.fecha|date:"d/m/Y" }}</td>
+          <td class="text-muted">{{ r.hora_recepcion|time:"H:i" }}</td>
+          <td>{{ r.cliente.nombre|default:r.cliente_nombre|default:"—" }}</td>
+          <td style="font-family:monospace;">{{ r.placa|default:"—"|upper }}</td>
+          <td class="text-muted" style="font-size:.82rem;">{{ r.vehiculo_descripcion }}</td>
+          <td>{% if r.servicio %}<span class="badge badge-purple">{{ r.servicio.tipo_servicio.nombre }}</span>{% else %}—{% endif %}</td>
+          <td>
+            {% if r.servicio %}
+            <span class="text-green fw-bold">${{ r.servicio.precio_cobrado }}</span>
+            {% else %}
+            <span class="badge badge-orange">Sin cobro</span>
+            {% endif %}
+          </td>
+          <td class="text-muted" style="font-size:.78rem; max-width:220px;">
+            {% if r.obs_cliente or r.obs_colaborador %}
+              {% if r.obs_cliente %}<div>👤 {{ r.obs_cliente|truncatechars:40 }}</div>{% endif %}
+              {% if r.obs_colaborador %}<div>🧰 {{ r.obs_colaborador|truncatechars:40 }}</div>{% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            <a href="{% url 'recepcion_detalle' r.pk %}" class="btn btn-outline btn-sm">Ver</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" style="text-align:center; padding:40px; color:var(--text-muted);">
+            {% if q or fecha_desde or fecha_hasta or solo_obs %}
+              No se encontraron recepciones con esos filtros.
+            {% else %}
+              No hay recepciones registradas.
+              <a href="{% url 'recepcion_nueva' %}" class="text-cyan">Registra la primera.</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

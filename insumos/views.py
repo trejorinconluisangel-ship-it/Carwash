@@ -1,7 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db.models import Sum, F, Case, When, IntegerField
-from .models import Proveedor, Insumo, Compra, ItemLista, Recordatorio, CATEGORIA_CHOICES, PRIORIDAD_LISTA
+from django.utils import timezone
+from .models import Proveedor, Insumo, Compra, EnvaseEnUso, ItemLista, Recordatorio, CATEGORIA_CHOICES, PRIORIDAD_LISTA
 from .forms import ProveedorForm, InsumoForm, CompraForm
 
 
@@ -83,12 +84,41 @@ def insumo_eliminar(request, pk):
 def insumo_detalle(request, pk):
     insumo = get_object_or_404(Insumo, pk=pk)
     compras = insumo.compras.all()[:10]
-    servicios_posibles = insumo.servicios_posibles()
     return render(request, 'insumos/insumo_detalle.html', {
         'insumo': insumo,
         'compras': compras,
-        'servicios_posibles': servicios_posibles,
+        'envase_activo': insumo.envase_activo,
+        'envases_terminados': insumo.envases_terminados[:10],
     })
+
+
+def envase_abrir(request, pk):
+    insumo = get_object_or_404(Insumo, pk=pk)
+    if request.method == 'POST':
+        if insumo.envase_activo:
+            messages.error(request, 'Ya hay un envase en uso. Márcalo como terminado antes de abrir otro.')
+        elif insumo.envases_en_bodega <= 0:
+            messages.error(request, 'No hay envases en bodega. Registra una compra primero.')
+        else:
+            EnvaseEnUso.objects.create(insumo=insumo, costo_envase=insumo.costo_envase,
+                                       contenido_envase=insumo.contenido_envase)
+            insumo.envases_en_bodega -= 1
+            insumo.save(update_fields=['envases_en_bodega'])
+            messages.success(request, 'Envase abierto. A partir de ahora se cuentan los vehículos atendidos.')
+    return redirect('insumo_detalle', pk=pk)
+
+
+def envase_terminar(request, pk):
+    insumo = get_object_or_404(Insumo, pk=pk)
+    if request.method == 'POST':
+        envase = insumo.envase_activo
+        if envase:
+            envase.fecha_fin = timezone.localdate()
+            envase.save(update_fields=['fecha_fin'])
+            messages.success(request, f'Envase marcado como terminado — rindió {envase.vehiculos_atendidos} vehículos.')
+        else:
+            messages.error(request, 'Este insumo no tiene un envase en uso.')
+    return redirect('insumo_detalle', pk=pk)
 
 
 # ── Compras ──────────────────────────────────────────────────────────────────
@@ -111,13 +141,11 @@ def compra_crear(request):
 def compra_eliminar(request, pk):
     obj = get_object_or_404(Compra, pk=pk)
     if request.method == 'POST':
-        # Revertir stock
-        obj.insumo.stock_actual -= obj.cantidad
-        if obj.insumo.stock_actual < 0:
-            obj.insumo.stock_actual = 0
-        obj.insumo.save(update_fields=['stock_actual'])
+        # Revertir envases en bodega
+        obj.insumo.envases_en_bodega = max(0, obj.insumo.envases_en_bodega - obj.envases)
+        obj.insumo.save(update_fields=['envases_en_bodega'])
         obj.delete()
-        messages.success(request, 'Compra eliminada y stock revertido.')
+        messages.success(request, 'Compra eliminada y envases revertidos.')
         return redirect('compra_lista')
     return render(request, 'insumos/confirmar_eliminar.html', {'obj': obj, 'tipo': 'compra'})
 
