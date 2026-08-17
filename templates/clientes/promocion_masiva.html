@@ -5,15 +5,19 @@
 <div class="topbar">
   <div>
     <div class="page-title">📣 Promoción por WhatsApp</div>
-    <div class="page-subtitle">Escribe tu mensaje y envíalo uno por uno — usa {% templatetag openbrace %}nombre{% templatetag closebrace %} para personalizar</div>
+    <div class="page-subtitle">Escribe tu mensaje y envíalo uno por uno — personalízalo por cliente</div>
   </div>
   <a href="{% url 'cliente_lista' %}" class="btn btn-outline">← Volver</a>
 </div>
 
 <div class="card mb-3">
   <label class="form-label">Mensaje</label>
-  <textarea id="mensajePromo" class="form-control" rows="4">¡Hola {nombre}! 🚗✨ Tenemos una promoción especial esta semana en Neowash Auto-Wash. ¡Te esperamos!</textarea>
-  <div class="text-muted mt-1" style="font-size:.75rem;">{% templatetag openbrace %}nombre{% templatetag closebrace %} se reemplaza por el primer nombre de cada cliente en su link.</div>
+  <textarea id="mensajePromo" class="form-control" rows="4">{% if etiqueta %}¡Hola {nombre}! Tú y tu {vehiculo} son especiales para nosotros 🚗✨ Notamos que le vendría muy bien nuestro servicio de {etiqueta}. ¿Te interesa agendar una cita para hacérselo?{% else %}¡Hola {nombre}! 🚗✨ Tenemos una promoción especial esta semana en Neowash Auto-Wash. ¡Te esperamos!{% endif %}</textarea>
+  <div class="text-muted mt-1" style="font-size:.75rem;">
+    Variables disponibles: <code>{% templatetag openbrace %}nombre{% templatetag closebrace %}</code> (primer nombre),
+    <code>{% templatetag openbrace %}vehiculo{% templatetag closebrace %}</code> (marca, modelo y placa),
+    <code>{% templatetag openbrace %}etiqueta{% templatetag closebrace %}</code> (la oportunidad marcada, si filtras por una) — cada una se reemplaza con los datos de cada cliente en su link.
+  </div>
 </div>
 
 <!-- ── Filtro por categoría ──────────────────────────────────── -->
@@ -91,6 +95,7 @@
           <td class="text-green" style="font-size:.85rem;">${{ c.total_gastado_calc|floatformat:0 }}</td>
           {% if etiqueta %}
           <td class="text-muted" style="font-size:.78rem; max-width:200px;">
+            {% if c.oportunidad_actual.vehiculo %}<div class="text-cyan" style="font-weight:600;">{{ c.oportunidad_actual.vehiculo }}</div>{% endif %}
             {% if c.oportunidad_actual.notas %}{{ c.oportunidad_actual.notas|truncatechars:60 }}{% else %}—{% endif %}
             <a href="{% url 'cliente_detalle' c.pk %}#oportunidades" class="text-cyan" style="display:block; font-size:.72rem;">Ver perfil</a>
           </td>
@@ -98,6 +103,7 @@
           <td>
             <a href="#" target="_blank" class="btn btn-sm promo-send-btn"
                data-numero="{{ c.numero_whatsapp }}" data-nombre="{{ c.primer_nombre }}"
+               data-vehiculo="{{ c.vehiculo_placeholder }}" data-etiqueta="{{ c.etiqueta_placeholder }}"
                style="background:rgba(0,255,136,0.15); color:var(--green); border:1px solid rgba(0,255,136,0.35);">
               💬 Enviar
             </a>
@@ -137,8 +143,10 @@
       const plantilla = textarea.value;
       botones.forEach(btn => {
         const numero = btn.dataset.numero;
-        const nombre = btn.dataset.nombre || '';
-        const mensaje = plantilla.split('{nombre}').join(nombre);
+        const mensaje = plantilla
+          .split('{nombre}').join(btn.dataset.nombre || '')
+          .split('{vehiculo}').join(btn.dataset.vehiculo || '')
+          .split('{etiqueta}').join(btn.dataset.etiqueta || '');
         btn.href = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
       });
     }

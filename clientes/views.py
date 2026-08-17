@@ -38,7 +38,7 @@ def promocion_masiva(request):
     )
 
     base_qs = Cliente.objects.exclude(whatsapp='').prefetch_related(
-        'vehiculos', 'servicios', 'oportunidades',
+        'vehiculos', 'servicios', 'oportunidades__vehiculo',
     )
     if q:
         base_qs = base_qs.filter(nombre__icontains=q)
@@ -59,10 +59,22 @@ def promocion_masiva(request):
         c.es_multi_vehiculo = c.num_vehiculos_calc > 1
         c.es_cumple_mes = bool(c.fecha_nacimiento and c.fecha_nacimiento.month == hoy.month)
         c.es_premio_grande = c.visitas_lealtad >= VISITAS_PREMIO_GRANDE
+        c.oportunidad_actual = None
         if etiqueta:
             c.oportunidad_actual = next(
                 (o for o in c.oportunidades.all() if o.etiqueta == etiqueta and not o.atendida), None
             )
+        vehiculos_cliente = list(c.vehiculos.all())
+        vehiculo_ref = None
+        if c.oportunidad_actual and c.oportunidad_actual.vehiculo:
+            vehiculo_ref = c.oportunidad_actual.vehiculo
+        elif vehiculos_cliente:
+            vehiculo_ref = vehiculos_cliente[0]
+        if vehiculo_ref:
+            c.vehiculo_placeholder = ' '.join(p for p in [vehiculo_ref.marca, vehiculo_ref.modelo] if p)
+        else:
+            c.vehiculo_placeholder = 'tu auto'
+        c.etiqueta_placeholder = c.oportunidad_actual.etiqueta if c.oportunidad_actual else ''
         clientes_calc.append(c)
 
     conteos = {
@@ -152,7 +164,7 @@ def cliente_detalle(request, pk):
         'total_gastado': total_gastado,
         'meta_pequeno': VISITAS_PREMIO_PEQUENO,
         'meta_grande': VISITAS_PREMIO_GRANDE,
-        'oportunidades': cliente.oportunidades.filter(atendida=False),
+        'oportunidades': cliente.oportunidades.filter(atendida=False).select_related('vehiculo'),
     })
 
 
@@ -163,8 +175,12 @@ def oportunidad_crear(request, cliente_pk):
     if request.method == 'POST':
         etiqueta = request.POST.get('etiqueta', '').strip()
         notas = request.POST.get('notas', '').strip()
+        vehiculo_id = request.POST.get('vehiculo_id')
+        vehiculo = None
+        if vehiculo_id:
+            vehiculo = get_object_or_404(Vehiculo, pk=vehiculo_id, cliente=cliente)
         if etiqueta:
-            OportunidadCliente.objects.create(cliente=cliente, etiqueta=etiqueta, notas=notas)
+            OportunidadCliente.objects.create(cliente=cliente, vehiculo=vehiculo, etiqueta=etiqueta, notas=notas)
             messages.success(request, 'Oportunidad agregada.')
         else:
             messages.error(request, 'Escribe una etiqueta para la oportunidad.')

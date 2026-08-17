@@ -128,6 +128,9 @@ class OportunidadCliente(models.Model):
     producto que hoy no ofrecemos (o nos falta el insumo). Cuando ya esté
     disponible, se usa para filtrar a quién ofrecérselo por WhatsApp."""
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='oportunidades')
+    vehiculo = models.ForeignKey('Vehiculo', null=True, blank=True, on_delete=models.SET_NULL,
+                                 related_name='oportunidades',
+                                 help_text='El vehículo específico que necesita el servicio/producto (opcional)')
     etiqueta = models.CharField(max_length=100, help_text='Ej: Descontaminación de cristales, Pulido de faros...')
     notas = models.TextField(blank=True, help_text='Detalle de por qué le serviría (opcional)')
     atendida = models.BooleanField(default=False)

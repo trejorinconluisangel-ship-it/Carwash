@@ -177,6 +177,12 @@
       <div class="d-flex justify-between align-center mb-2" style="padding:10px 12px; background:rgba(255,107,53,0.07); border:1px solid rgba(255,107,53,0.2); border-radius:8px;">
         <div>
           <span class="badge" style="background:rgba(255,107,53,0.15); color:var(--orange); border:1px solid rgba(255,107,53,0.35);">{{ o.etiqueta }}</span>
+          {% if o.vehiculo %}
+          <span class="badge badge-cyan" style="font-family:monospace;">{{ o.vehiculo.placa|upper }}</span>
+          <span class="text-muted" style="font-size:.78rem;">{{ o.vehiculo.marca }}{% if o.vehiculo.modelo %} {{ o.vehiculo.modelo }}{% endif %}</span>
+          {% else %}
+          <span class="text-muted" style="font-size:.72rem;">(sin vehículo específico)</span>
+          {% endif %}
           {% if o.notas %}<div class="text-muted mt-1" style="font-size:.78rem;">{{ o.notas }}</div>{% endif %}
         </div>
         <div class="d-flex gap-1">
@@ -196,6 +202,14 @@
       <form method="post" action="{% url 'oportunidad_crear' cliente.pk %}" class="mt-2" style="display:flex; gap:8px; flex-wrap:wrap;">
         {% csrf_token %}
         <input type="text" name="etiqueta" class="form-control" style="flex:1; min-width:160px;" placeholder="Ej: Descontaminación de cristales" required>
+        {% if vehiculos %}
+        <select name="vehiculo_id" class="form-select" style="min-width:160px;">
+          <option value="">Sin vehículo específico</option>
+          {% for v in vehiculos %}
+          <option value="{{ v.pk }}">{{ v.placa|upper }} — {{ v.marca }}{% if v.modelo %} {{ v.modelo }}{% endif %}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
         <input type="text" name="notas" class="form-control" style="flex:2; min-width:200px;" placeholder="Notas (opcional)">
         <button type="submit" class="btn btn-outline btn-sm">+ Agregar</button>
       </form>
