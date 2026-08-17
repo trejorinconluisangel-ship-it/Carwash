@@ -73,7 +73,7 @@ class Cliente(models.Model):
 
     @property
     def total_servicios(self):
-        return sum(v.servicios.count() for v in self.vehiculos.all())
+        return self.servicios.count()
 
     @property
     def premio_pequeno_alcanzado(self):

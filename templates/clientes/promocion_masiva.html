@@ -16,17 +16,31 @@
   <div class="text-muted mt-1" style="font-size:.75rem;">{% templatetag openbrace %}nombre{% templatetag closebrace %} se reemplaza por el primer nombre de cada cliente en su link.</div>
 </div>
 
-<!-- ── Filtro ────────────────────────────────────────────────── -->
+<!-- ── Filtro por categoría ──────────────────────────────────── -->
 <form method="get" class="card mb-3" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
-  <div style="flex:1; min-width:220px;">
+  <div style="flex:1; min-width:200px;">
     <label class="text-muted" style="font-size:.78rem; display:block; margin-bottom:4px;">Buscar cliente</label>
     <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Nombre..." autocomplete="off">
   </div>
-  <label class="d-flex gap-1" style="align-items:center; font-size:.85rem; white-space:nowrap; padding-bottom:9px;">
-    <input type="checkbox" name="solo_lealtad" value="1" {% if solo_lealtad %}checked{% endif %}> Solo clientes frecuentes (lealtad)
-  </label>
+  <div style="min-width:240px;">
+    <label class="text-muted" style="font-size:.78rem; display:block; margin-bottom:4px;">Categoría</label>
+    <select name="categoria" class="form-select">
+      <option value="" {% if not categoria %}selected{% endif %}>Todos los clientes</option>
+      <option value="primerizos" {% if categoria == 'primerizos' %}selected{% endif %}>🌱 Primerizos — 1 sola visita ({{ conteos.primerizos }})</option>
+      <option value="inactivos" {% if categoria == 'inactivos' %}selected{% endif %}>💤 Inactivos ({{ conteos.inactivos }})</option>
+      <option value="frecuentes" {% if categoria == 'frecuentes' %}selected{% endif %}>⭐ Frecuentes ({{ conteos.frecuentes }})</option>
+      <option value="multi_vehiculo" {% if categoria == 'multi_vehiculo' %}selected{% endif %}>🚙 Traen más de 1 vehículo ({{ conteos.multi_vehiculo }})</option>
+      <option value="cumple_mes" {% if categoria == 'cumple_mes' %}selected{% endif %}>🎂 Cumpleañeros del mes ({{ conteos.cumple_mes }})</option>
+      <option value="premio_grande" {% if categoria == 'premio_grande' %}selected{% endif %}>🎁 Premio grande sin canjear ({{ conteos.premio_grande }})</option>
+      <option value="top_gasto" {% if categoria == 'top_gasto' %}selected{% endif %}>💰 Top clientes por gasto ({{ conteos.top_gasto }})</option>
+    </select>
+  </div>
+  <div style="width:140px;">
+    <label class="text-muted" style="font-size:.78rem; display:block; margin-bottom:4px;">Días sin visitar</label>
+    <input type="number" name="dias_inactivo" value="{{ dias_inactivo }}" min="1" class="form-control">
+  </div>
   <button class="btn btn-outline" type="submit">🔍 Filtrar</button>
-  {% if q or solo_lealtad %}<a href="{% url 'promocion_masiva' %}" class="btn btn-outline">✕</a>{% endif %}
+  {% if q or categoria %}<a href="{% url 'promocion_masiva' %}" class="btn btn-outline">✕</a>{% endif %}
 </form>
 
 <div class="card">
@@ -41,6 +55,9 @@
           <th style="width:36px;"></th>
           <th>Cliente</th>
           <th>WhatsApp</th>
+          <th>Vehículos</th>
+          <th>Última visita</th>
+          <th>Total gastado</th>
           <th>Acción</th>
         </tr>
       </thead>
@@ -50,6 +67,11 @@
           <td><input type="checkbox" class="promo-check" data-row="promo-row-{{ c.pk }}" title="Marcar como enviado"></td>
           <td class="fw-bold">{{ c.nombre }}</td>
           <td class="text-muted">{{ c.whatsapp }}</td>
+          <td class="text-muted">{{ c.num_vehiculos_calc }}</td>
+          <td class="text-muted" style="font-size:.82rem;">
+            {% if c.ultima_visita_calc %}{{ c.ultima_visita_calc|date:"d/m/Y" }} ({{ c.dias_sin_venir }}d){% else %}—{% endif %}
+          </td>
+          <td class="text-green" style="font-size:.85rem;">${{ c.total_gastado_calc|floatformat:0 }}</td>
           <td>
             <a href="#" target="_blank" class="btn btn-sm promo-send-btn"
                data-numero="{{ c.numero_whatsapp }}" data-nombre="{{ c.primer_nombre }}"
@@ -60,8 +82,8 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="4" style="text-align:center; padding:30px; color:var(--text-muted);">
-            No hay clientes con WhatsApp registrado{% if q or solo_lealtad %} con esos filtros{% endif %}.
+          <td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">
+            No hay clientes con WhatsApp registrado{% if q or categoria %} con esos filtros{% endif %}.
           </td>
         </tr>
         {% endfor %}
