@@ -230,7 +230,17 @@
       <div class="help-section-body">
         Panel principal con resumen de todo el negocio. Muestra <strong>ingresos, ganancias, número de servicios</strong> y ventas de tienda.<br><br>
         <strong>Selector de período:</strong> cambia entre Día, Semana, Mes, Semestre o Año. Usa el campo de fecha para ir a períodos anteriores.<br><br>
+        Incluye <strong>🕑 Horario con Más Afluencia</strong> (para saber a qué hora conviene tener más personal) y <strong>🎖️ Retorno de Clientes</strong> (qué tanto están regresando gracias al programa de lealtad).<br><br>
         Las gráficas se actualizan automáticamente al cambiar el período.
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-header">📅 Agenda</div>
+      <div class="help-section-body">
+        Calendario mensual de <strong>citas agendadas</strong> y <strong>cumpleaños de clientes</strong> — cada día muestra quién tiene cita y quién cumple años, sin importar el año en que nació.<br><br>
+        Usa los botones <strong>Todos / 📅 Servicios agendados / 🎂 Cumpleaños</strong> para ver solo lo que te interesa.<br><br>
+        Cada cita y cada cumpleaños tienen un botón <strong>💬</strong> que abre WhatsApp con un mensaje ya redactado (recordatorio de la cita, o felicitación de cumpleaños) — solo falta darle enviar.
       </div>
     </div>
 
@@ -238,7 +248,8 @@
       <div class="help-section-header">🚗 Recepción</div>
       <div class="help-section-body">
         Aquí <strong>debe pasar todo vehículo</strong> antes de lavarse. Capturas los datos del cliente, del auto, marcas rayones en el diagrama y firman ambas partes.<br><br>
-        En la sección "Servicio y Cobro" eliges el <strong>paquete</strong> y la <strong>categoría del vehículo</strong> — el precio se llena solo con el valor de <strong>Precios de Paquetes</strong>. Al dar guardar, <strong>el servicio queda cobrado de una vez</strong>: no hace falta un paso aparte.
+        En la sección "Servicio y Cobro" eliges el <strong>paquete</strong> y la <strong>categoría del vehículo</strong> — el precio se llena solo con el valor de <strong>Precios de Paquetes</strong>. Al dar guardar, <strong>el servicio queda cobrado de una vez</strong>: no hace falta un paso aparte.<br><br>
+        Una vez cobrado aparecen los botones <strong>🚗 Avisar que está listo</strong> y <strong>🧾 Ticket</strong> para mandarle al cliente su recibo o el aviso de que ya puede recoger su auto, por WhatsApp.
       </div>
     </div>
 
@@ -246,7 +257,8 @@
       <div class="help-section-header">🚿 Servicios Realizados</div>
       <div class="help-section-body">
         Historial de todos los cobros — se llena solo cada vez que guardas una Recepción. Aquí ves precio, costo de insumos y ganancia de cada servicio.<br><br>
-        El botón "+ Registrar Servicio" es solo para casos excepcionales que no pasaron por Recepción.
+        Por cada servicio puedes enviar el <strong>🧾 Ticket</strong> (recibo con logo, datos del negocio y agradecimiento) o el aviso <strong>🚗 vehículo listo</strong> por WhatsApp.<br><br>
+        El botón "+ Registrar manualmente" es solo para casos excepcionales que no pasaron por Recepción.
       </div>
     </div>
 
@@ -313,11 +325,22 @@
         Directorio de clientes con su información de contacto y los vehículos registrados.<br><br>
         <strong>Por cada cliente puedes registrar:</strong>
         <ul>
-          <li>Nombre y WhatsApp (con botón directo a chat)</li>
+          <li>Nombre, WhatsApp (con botón directo a chat) y fecha de cumpleaños</li>
+          <li>Notas u observaciones (ej. no le gusta el aromatizante, revisa las llantas a detalle...)</li>
           <li>Uno o varios vehículos con placa, marca, modelo, año, color y tipo</li>
         </ul>
         Al <strong>registrar un servicio</strong>, puedes seleccionar el cliente y su vehículo — la placa y el tipo se autocompletan automáticamente.<br><br>
-        En el <strong>perfil del cliente</strong> puedes ver todo su historial de servicios y cuánto ha gastado en total.
+        En el <strong>perfil del cliente</strong> ves su historial, cuánto ha gastado, su progreso de lealtad, y la sección <strong>🎯 Oportunidades</strong> donde marcas si le vendría bien un servicio o producto que hoy no ofreces (ligado a un vehículo específico si quieres) — para ofrecérselo por WhatsApp en cuanto esté disponible.
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-header">📣 Promoción por WhatsApp</div>
+      <div class="help-section-body">
+        Página para mandar un mensaje a varios clientes — cada uno recibe su propio link de WhatsApp ya personalizado, uno por uno (WhatsApp no permite un envío automático real sin su API de negocio de pago).<br><br>
+        El mensaje admite las variables <strong>{nombre}</strong>, <strong>{vehiculo}</strong> y <strong>{etiqueta}</strong> (esta última solo si filtras por una oportunidad marcada) para que no se sienta genérico.<br><br>
+        <strong>Filtra por categoría:</strong> primerizos, inactivos (con días ajustables), frecuentes, con más de 1 vehículo, cumpleañeros del mes, premio grande sin canjear, o top clientes por gasto — cada opción muestra cuántos clientes califican.<br><br>
+        El checkbox de cada fila solo marca visualmente a quién ya le enviaste el mensaje, para no perder el hilo al recorrer la lista.
       </div>
     </div>
 
