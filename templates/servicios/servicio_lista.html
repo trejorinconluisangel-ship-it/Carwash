@@ -39,6 +39,12 @@
           <td class="text-muted" style="font-size:.8rem;">{{ s.notas|default:"—"|truncatechars:30 }}</td>
           <td>
             <div class="d-flex gap-1">
+              {% if s.whatsapp_listo_url %}
+              <a href="{{ s.whatsapp_listo_url }}" target="_blank" class="btn btn-sm"
+                 style="background:rgba(0,255,136,0.15); color:var(--green); border:1px solid rgba(0,255,136,0.35);" title="Avisar que está listo">
+                🚗
+              </a>
+              {% endif %}
               <a href="{% url 'servicio_ticket' s.pk %}" class="btn btn-outline btn-sm">🧾 Ticket</a>
               <a href="{% url 'servicio_eliminar' s.pk %}" class="btn btn-danger btn-sm">✕</a>
             </div>

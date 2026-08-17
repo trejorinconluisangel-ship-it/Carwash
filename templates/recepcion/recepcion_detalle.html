@@ -12,6 +12,12 @@
   <div class="d-flex gap-1">
     {% if recepcion.servicio %}
     <span class="badge badge-green" style="padding:9px 16px;">✅ Cobrado — ${{ recepcion.servicio.precio_cobrado }}</span>
+    {% if recepcion.servicio.whatsapp_listo_url %}
+    <a href="{{ recepcion.servicio.whatsapp_listo_url }}" target="_blank" class="btn"
+       style="background:rgba(0,255,136,0.15); color:var(--green); border:1px solid rgba(0,255,136,0.35);">
+      🚗 Avisar que está listo
+    </a>
+    {% endif %}
     <a href="{% url 'servicio_ticket' recepcion.servicio.pk %}" class="btn btn-outline">🧾 Ticket</a>
     {% else %}
     <a href="{% url 'servicio_crear' %}?recepcion={{ recepcion.pk }}{% if recepcion.cliente %}&cliente={{ recepcion.cliente.pk }}{% endif %}{% if recepcion.vehiculo %}&vehiculo={{ recepcion.vehiculo.pk }}{% endif %}&fecha={{ recepcion.fecha|date:'Y-m-d' }}" class="btn btn-primary">💰 Registrar servicio</a>

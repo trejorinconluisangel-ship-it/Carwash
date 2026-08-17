@@ -166,6 +166,26 @@ class Servicio(models.Model):
         )
         return f'https://wa.me/{numero}?text={quote(mensaje)}'
 
+    @property
+    def whatsapp_listo_url(self):
+        tel = self.telefono_contacto
+        if not tel:
+            return ''
+        from urllib.parse import quote
+        numero = ''.join(filter(str.isdigit, tel))
+        if len(numero) == 10:
+            numero = '52' + numero
+        primer_nombre = self.nombre_cliente_display.split()[0] if self.nombre_cliente_display else ''
+        mensaje = (
+            f'🚗💦 *{NEGOCIO_NOMBRE}*\n\n'
+            f'¡Hola{", " + primer_nombre if primer_nombre else ""}! 🎉 '
+            f'Tu {self.vehiculo_descripcion_ticket} ya está listo, puedes pasar a recogerlo cuando gustes.\n\n'
+            f'📍 {NEGOCIO_DIRECCION}\n'
+            f'📱 {NEGOCIO_WHATSAPP_1} · {NEGOCIO_WHATSAPP_2}\n\n'
+            f'¡Te esperamos! 🙌'
+        )
+        return f'https://wa.me/{numero}?text={quote(mensaje)}'
+
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         insumos = []
