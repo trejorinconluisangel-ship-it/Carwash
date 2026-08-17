@@ -2,7 +2,10 @@ import json
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import TipoServicio, TipoVehiculo, Servicio, PrecioPaquete
+from .models import (
+    TipoServicio, TipoVehiculo, Servicio, PrecioPaquete,
+    NEGOCIO_NOMBRE, NEGOCIO_DIRECCION, NEGOCIO_WHATSAPP_1, NEGOCIO_WHATSAPP_2, NEGOCIO_FACEBOOK,
+)
 from .forms import TipoServicioForm, TipoVehiculoForm, ServicioForm
 from clientes.models import VISITAS_PREMIO_PEQUENO, VISITAS_PREMIO_GRANDE, TIPO_VEHICULO_CHOICES
 
@@ -211,7 +214,14 @@ def servicio_ticket(request, pk):
         Servicio.objects.select_related('tipo_servicio', 'tipo_vehiculo', 'cliente', 'vehiculo'),
         pk=pk,
     )
-    return render(request, 'servicios/servicio_ticket.html', {'servicio': servicio})
+    return render(request, 'servicios/servicio_ticket.html', {
+        'servicio': servicio,
+        'negocio_nombre': NEGOCIO_NOMBRE,
+        'negocio_direccion': NEGOCIO_DIRECCION,
+        'negocio_whatsapp_1': NEGOCIO_WHATSAPP_1,
+        'negocio_whatsapp_2': NEGOCIO_WHATSAPP_2,
+        'negocio_facebook': NEGOCIO_FACEBOOK,
+    })
 
 
 def servicio_eliminar(request, pk):

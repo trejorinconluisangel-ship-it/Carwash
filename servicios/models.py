@@ -1,6 +1,12 @@
 from django.db import models
 from django.utils import timezone
 
+NEGOCIO_NOMBRE = 'NEOWASH AUTO-WASH'
+NEGOCIO_DIRECCION = 'Calle Belisario Domínguez #247, La Bola, Ezequiel Montes, Qro.'
+NEGOCIO_WHATSAPP_1 = '56 2375 9152'
+NEGOCIO_WHATSAPP_2 = '441 122 6818'
+NEGOCIO_FACEBOOK = 'Neowash'
+
 
 TIPO_SERVICIO_CHOICES = [
     ('express_ext', 'Lavado Express Exterior'),
@@ -144,15 +150,19 @@ class Servicio(models.Model):
         if len(numero) == 10:
             numero = '52' + numero
         primer_nombre = self.nombre_cliente_display.split()[0] if self.nombre_cliente_display else ''
+        descripcion = f'\n{self.tipo_servicio.descripcion}\n' if self.tipo_servicio.descripcion else ''
         mensaje = (
-            f'🚗💦 *NEOWASH AUTO-WASH*\n'
-            f'¡Gracias por tu visita{", " + primer_nombre if primer_nombre else ""}!\n\n'
+            f'🚗💦 *{NEGOCIO_NOMBRE}*\n\n'
             f'🧾 *Ticket de servicio*\n'
             f'Fecha: {self.fecha.strftime("%d/%m/%Y")}\n'
+            f'Cliente: {self.nombre_cliente_display}\n'
             f'Vehículo: {self.vehiculo_descripcion_ticket}\n'
-            f'Servicio: {self.tipo_servicio.nombre}\n'
+            f'Servicio: {self.tipo_servicio.nombre}{descripcion}'
             f'Total: ${self.precio_cobrado}\n\n'
-            f'¡Esperamos verte pronto! 🙌'
+            f'🙏 ¡Gracias{", " + primer_nombre if primer_nombre else ""}, por confiar en nuestro trabajo!\n\n'
+            f'📍 {NEGOCIO_DIRECCION}\n'
+            f'📱 {NEGOCIO_WHATSAPP_1} · {NEGOCIO_WHATSAPP_2}\n'
+            f'📘 Facebook: {NEGOCIO_FACEBOOK}'
         )
         return f'https://wa.me/{numero}?text={quote(mensaje)}'
 

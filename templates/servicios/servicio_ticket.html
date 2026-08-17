@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Ticket — {{ servicio.nombre_cliente_display }}{% endblock %}
 
 {% block content %}
@@ -13,9 +14,14 @@
 <div class="ticket-wrap">
   <div class="ticket-card" id="ticket">
     <div class="ticket-header">
-      <div class="ticket-logo">🚗💦</div>
+      <img src="{% static 'icons/icon-512.png' %}" alt="Neowash" class="ticket-logo-img">
       <div class="ticket-brand">NEOWASH</div>
       <div class="ticket-brand-sub">AUTO-WASH</div>
+      <div class="ticket-negocio-info">
+        📍 {{ negocio_direccion }}<br>
+        📱 {{ negocio_whatsapp_1 }} · {{ negocio_whatsapp_2 }}<br>
+        📘 Facebook: {{ negocio_facebook }}
+      </div>
     </div>
 
     <div class="ticket-line"></div>
@@ -44,7 +50,7 @@
       <span class="ticket-value fw-bold">{{ servicio.tipo_servicio.nombre }}</span>
     </div>
     {% if servicio.tipo_servicio.descripcion %}
-    <div class="ticket-desc">{{ servicio.tipo_servicio.descripcion }}</div>
+    <div class="ticket-desc"><strong>Incluye:</strong> {{ servicio.tipo_servicio.descripcion }}</div>
     {% endif %}
 
     <div class="ticket-line"></div>
@@ -55,7 +61,7 @@
     </div>
 
     <div class="ticket-footer">
-      ¡Gracias por tu preferencia!<br>Te esperamos pronto 🙌
+      🙏 ¡Gracias por confiar en nuestro trabajo!<br>Te esperamos pronto
     </div>
   </div>
 
@@ -93,9 +99,20 @@
     padding: 24px 22px;
   }
   .ticket-header { text-align: center; margin-bottom: 6px; }
-  .ticket-logo { font-size: 2rem; line-height: 1; margin-bottom: 4px; }
+  .ticket-logo-img {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    margin-bottom: 6px;
+    box-shadow: 0 0 16px rgba(0,212,255,0.25);
+  }
   .ticket-brand { font-size: 1.3rem; font-weight: 800; letter-spacing: 2px; color: var(--cyan); }
   .ticket-brand-sub { font-size: .7rem; letter-spacing: 3px; color: var(--text-muted); }
+  .ticket-negocio-info {
+    margin-top: 10px;
+    font-size: .72rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
 
   .ticket-line {
     border-top: 1px dashed var(--border);
@@ -127,7 +144,8 @@
     body, .ticket-card { background: #fff !important; color: #000 !important; }
     .ticket-card { border: 1px solid #ccc !important; }
     .ticket-brand, .ticket-value, .ticket-total .ticket-value { color: #000 !important; }
-    .ticket-label, .ticket-desc, .ticket-footer, .ticket-brand-sub { color: #555 !important; }
+    .ticket-label, .ticket-desc, .ticket-footer, .ticket-brand-sub, .ticket-negocio-info { color: #555 !important; }
+    .ticket-logo-img { box-shadow: none !important; }
   }
 </style>
 {% endblock %}
