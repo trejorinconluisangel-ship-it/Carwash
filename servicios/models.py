@@ -101,6 +101,61 @@ class Servicio(models.Model):
     def ganancia(self):
         return float(self.precio_cobrado) - float(self.costo_insumos)
 
+    @property
+    def nombre_cliente_display(self):
+        if self.cliente:
+            return self.cliente.nombre
+        if hasattr(self, 'recepcion') and self.recepcion.cliente_nombre:
+            return self.recepcion.cliente_nombre
+        return 'Cliente'
+
+    @property
+    def telefono_contacto(self):
+        if hasattr(self, 'recepcion') and self.recepcion.telefono:
+            return self.recepcion.telefono
+        if self.cliente and self.cliente.whatsapp:
+            return self.cliente.whatsapp
+        return ''
+
+    @property
+    def vehiculo_descripcion_ticket(self):
+        if self.vehiculo:
+            partes = [p for p in [self.vehiculo.marca, self.vehiculo.modelo] if p]
+            desc = ' '.join(partes)
+            if self.vehiculo.placa:
+                desc += f' ({self.vehiculo.placa})'
+            return desc.strip() or '—'
+        if hasattr(self, 'recepcion'):
+            r = self.recepcion
+            partes = [p for p in [r.marca, r.modelo] if p]
+            desc = ' '.join(partes)
+            if r.placa:
+                desc += f' ({r.placa})'
+            return desc.strip() or '—'
+        return '—'
+
+    @property
+    def whatsapp_ticket_url(self):
+        tel = self.telefono_contacto
+        if not tel:
+            return ''
+        from urllib.parse import quote
+        numero = ''.join(filter(str.isdigit, tel))
+        if len(numero) == 10:
+            numero = '52' + numero
+        primer_nombre = self.nombre_cliente_display.split()[0] if self.nombre_cliente_display else ''
+        mensaje = (
+            f'🚗💦 *NEOWASH AUTO-WASH*\n'
+            f'¡Gracias por tu visita{", " + primer_nombre if primer_nombre else ""}!\n\n'
+            f'🧾 *Ticket de servicio*\n'
+            f'Fecha: {self.fecha.strftime("%d/%m/%Y")}\n'
+            f'Vehículo: {self.vehiculo_descripcion_ticket}\n'
+            f'Servicio: {self.tipo_servicio.nombre}\n'
+            f'Total: ${self.precio_cobrado}\n\n'
+            f'¡Esperamos verte pronto! 🙌'
+        )
+        return f'https://wa.me/{numero}?text={quote(mensaje)}'
+
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         insumos = []

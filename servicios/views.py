@@ -206,6 +206,14 @@ def servicio_crear(request):
     })
 
 
+def servicio_ticket(request, pk):
+    servicio = get_object_or_404(
+        Servicio.objects.select_related('tipo_servicio', 'tipo_vehiculo', 'cliente', 'vehiculo'),
+        pk=pk,
+    )
+    return render(request, 'servicios/servicio_ticket.html', {'servicio': servicio})
+
+
 def servicio_eliminar(request, pk):
     obj = get_object_or_404(Servicio, pk=pk)
     if request.method == 'POST':

@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}Ticket — {{ servicio.nombre_cliente_display }}{% endblock %}
+
+{% block content %}
+<div class="topbar no-print">
+  <div>
+    <div class="page-title">🧾 Ticket de Servicio</div>
+    <div class="page-subtitle">Compártelo por WhatsApp o imprímelo para el cliente</div>
+  </div>
+  <a href="{% url 'servicio_lista' %}" class="btn btn-outline">← Volver</a>
+</div>
+
+<div class="ticket-wrap">
+  <div class="ticket-card" id="ticket">
+    <div class="ticket-header">
+      <div class="ticket-logo">🚗💦</div>
+      <div class="ticket-brand">NEOWASH</div>
+      <div class="ticket-brand-sub">AUTO-WASH</div>
+    </div>
+
+    <div class="ticket-line"></div>
+
+    <div class="ticket-row">
+      <span class="ticket-label">Fecha</span>
+      <span class="ticket-value">{{ servicio.fecha|date:"d/m/Y" }} · {{ servicio.hora|time:"H:i" }}</span>
+    </div>
+    <div class="ticket-row">
+      <span class="ticket-label">Cliente</span>
+      <span class="ticket-value">{{ servicio.nombre_cliente_display }}</span>
+    </div>
+    <div class="ticket-row">
+      <span class="ticket-label">Vehículo</span>
+      <span class="ticket-value">{{ servicio.vehiculo_descripcion_ticket }}</span>
+    </div>
+    <div class="ticket-row">
+      <span class="ticket-label">Categoría</span>
+      <span class="ticket-value">{{ servicio.tipo_vehiculo.nombre }}</span>
+    </div>
+
+    <div class="ticket-line"></div>
+
+    <div class="ticket-row">
+      <span class="ticket-label">Servicio</span>
+      <span class="ticket-value fw-bold">{{ servicio.tipo_servicio.nombre }}</span>
+    </div>
+    {% if servicio.tipo_servicio.descripcion %}
+    <div class="ticket-desc">{{ servicio.tipo_servicio.descripcion }}</div>
+    {% endif %}
+
+    <div class="ticket-line"></div>
+
+    <div class="ticket-row ticket-total">
+      <span class="ticket-label">TOTAL</span>
+      <span class="ticket-value">${{ servicio.precio_cobrado }}</span>
+    </div>
+
+    <div class="ticket-footer">
+      ¡Gracias por tu preferencia!<br>Te esperamos pronto 🙌
+    </div>
+  </div>
+
+  <div class="ticket-actions no-print">
+    {% if servicio.whatsapp_ticket_url %}
+    <a href="{{ servicio.whatsapp_ticket_url }}" target="_blank" class="btn"
+       style="background:rgba(0,255,136,0.15); color:var(--green); border:1px solid rgba(0,255,136,0.35); flex:1; justify-content:center;">
+      💬 Enviar por WhatsApp
+    </a>
+    {% else %}
+    <div class="text-muted" style="font-size:.8rem; text-align:center; flex:1;">
+      Sin teléfono registrado para enviar por WhatsApp
+    </div>
+    {% endif %}
+    <button type="button" class="btn btn-outline" style="flex:1; justify-content:center;" onclick="window.print()">
+      🖨️ Imprimir
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .ticket-wrap {
+    max-width: 380px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .ticket-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 22px;
+  }
+  .ticket-header { text-align: center; margin-bottom: 6px; }
+  .ticket-logo { font-size: 2rem; line-height: 1; margin-bottom: 4px; }
+  .ticket-brand { font-size: 1.3rem; font-weight: 800; letter-spacing: 2px; color: var(--cyan); }
+  .ticket-brand-sub { font-size: .7rem; letter-spacing: 3px; color: var(--text-muted); }
+
+  .ticket-line {
+    border-top: 1px dashed var(--border);
+    margin: 14px 0;
+  }
+  .ticket-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: .85rem;
+    padding: 3px 0;
+  }
+  .ticket-label { color: var(--text-muted); }
+  .ticket-value { color: var(--text); text-align: right; }
+  .ticket-desc { font-size: .75rem; color: var(--text-muted); margin-top: 2px; }
+  .ticket-total { font-size: 1.15rem; font-weight: 800; }
+  .ticket-total .ticket-value { color: var(--green); }
+  .ticket-footer {
+    text-align: center;
+    font-size: .78rem;
+    color: var(--text-muted);
+    margin-top: 16px;
+  }
+  .ticket-actions { display: flex; gap: 10px; }
+
+  @media print {
+    .no-print, .sidebar, .mobile-topbar, .help-btn, .help-panel, .help-overlay { display: none !important; }
+    .main { margin: 0 !important; padding: 0 !important; }
+    body, .ticket-card { background: #fff !important; color: #000 !important; }
+    .ticket-card { border: 1px solid #ccc !important; }
+    .ticket-brand, .ticket-value, .ticket-total .ticket-value { color: #000 !important; }
+    .ticket-label, .ticket-desc, .ticket-footer, .ticket-brand-sub { color: #555 !important; }
+  }
+</style>
+{% endblock %}

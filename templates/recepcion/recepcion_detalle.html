@@ -12,6 +12,7 @@
   <div class="d-flex gap-1">
     {% if recepcion.servicio %}
     <span class="badge badge-green" style="padding:9px 16px;">✅ Cobrado — ${{ recepcion.servicio.precio_cobrado }}</span>
+    <a href="{% url 'servicio_ticket' recepcion.servicio.pk %}" class="btn btn-outline">🧾 Ticket</a>
     {% else %}
     <a href="{% url 'servicio_crear' %}?recepcion={{ recepcion.pk }}{% if recepcion.cliente %}&cliente={{ recepcion.cliente.pk }}{% endif %}{% if recepcion.vehiculo %}&vehiculo={{ recepcion.vehiculo.pk }}{% endif %}&fecha={{ recepcion.fecha|date:'Y-m-d' }}" class="btn btn-primary">💰 Registrar servicio</a>
     {% endif %}

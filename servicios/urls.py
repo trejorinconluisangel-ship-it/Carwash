@@ -21,6 +21,7 @@ urlpatterns = [
     path('servicios/', views.servicio_lista, name='servicio_lista'),
     path('servicios/nuevo/', views.servicio_crear, name='servicio_crear'),
     path('servicios/<int:pk>/eliminar/', views.servicio_eliminar, name='servicio_eliminar'),
+    path('servicios/<int:pk>/ticket/', views.servicio_ticket, name='servicio_ticket'),
 
     # API
     path('api/precio-sugerido/', views.precio_sugerido_api, name='precio_sugerido_api'),
