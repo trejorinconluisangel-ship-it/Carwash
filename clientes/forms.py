@@ -5,12 +5,13 @@ from .models import Cliente, Vehiculo
 class ClienteForm(forms.ModelForm):
     class Meta:
         model = Cliente
-        fields = ['nombre', 'whatsapp', 'email', 'notas']
+        fields = ['nombre', 'whatsapp', 'email', 'fecha_nacimiento', 'notas']
         widgets = {
-            'nombre':    forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre completo'}),
-            'whatsapp':  forms.TextInput(attrs={'class': 'form-control', 'placeholder': '444 123 4567'}),
-            'email':     forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'correo@ejemplo.com'}),
-            'notas':     forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Preferencias, observaciones...'}),
+            'nombre':           forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre completo'}),
+            'whatsapp':         forms.TextInput(attrs={'class': 'form-control', 'placeholder': '444 123 4567'}),
+            'email':            forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'correo@ejemplo.com'}),
+            'fecha_nacimiento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'notas':            forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Preferencias, observaciones...'}),
         }
 
 

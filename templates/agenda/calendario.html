@@ -8,6 +8,7 @@
     <div class="page-subtitle">
       <span style="color:var(--text);">{{ total_mes }} cita{{ total_mes|pluralize }} en {{ mes_nombre }}</span>
       {% if pendientes_mes %} · <span style="color:var(--yellow);">⏳ {{ pendientes_mes }} pendiente{{ pendientes_mes|pluralize }}</span>{% endif %}
+      {% if cumples_mes_total %} · <span style="color:var(--purple);">🎂 {{ cumples_mes_total }} cumpleaños{{ cumples_mes_total|pluralize }}</span>{% endif %}
     </div>
   </div>
   <a href="{% url 'cita_crear' %}" class="btn btn-primary">+ Nueva Cita</a>
@@ -15,14 +16,21 @@
 
 <!-- ── Navegación de mes ─────────────────────────────────────── -->
 <div class="card mb-3" style="padding:12px 18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-  <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-outline btn-sm">← Anterior</a>
+  <a href="?year={{ prev_year }}&month={{ prev_month }}&vista={{ vista }}" class="btn btn-outline btn-sm">← Anterior</a>
   <div style="display:flex; align-items:center; gap:10px;">
     <span style="font-size:1.1rem; font-weight:700; color:var(--text);">{{ mes_nombre }} {{ year }}</span>
     {% if year != hoy_year or month != hoy_month %}
-    <a href="?year={{ hoy_year }}&month={{ hoy_month }}" class="btn btn-outline btn-sm">Hoy</a>
+    <a href="?year={{ hoy_year }}&month={{ hoy_month }}&vista={{ vista }}" class="btn btn-outline btn-sm">Hoy</a>
     {% endif %}
   </div>
-  <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-outline btn-sm">Siguiente →</a>
+  <a href="?year={{ next_year }}&month={{ next_month }}&vista={{ vista }}" class="btn btn-outline btn-sm">Siguiente →</a>
+</div>
+
+<!-- ── Filtro: citas / cumpleaños ──────────────────────────────── -->
+<div class="card mb-3" style="padding:10px 18px; display:flex; gap:8px; flex-wrap:wrap;">
+  <a href="?year={{ year }}&month={{ month }}&vista=todos" class="period-btn {% if vista == 'todos' %}active{% endif %}">Todos</a>
+  <a href="?year={{ year }}&month={{ month }}&vista=citas" class="period-btn {% if vista == 'citas' %}active{% endif %}">📅 Servicios agendados</a>
+  <a href="?year={{ year }}&month={{ month }}&vista=cumples" class="period-btn {% if vista == 'cumples' %}active{% endif %}">🎂 Cumpleaños</a>
 </div>
 
 <!-- ── Calendario ────────────────────────────────────────────── -->
@@ -47,11 +55,23 @@
           <a href="{% url 'cita_crear' %}?fecha={{ dia.fecha_iso }}" class="calendar-add-btn" title="Agendar cita">+</a>
         </div>
         <div class="calendar-day-citas">
+          {% if vista != 'citas' %}
+          {% for c in dia.cumpleanieros %}
+          <div class="cumple-chip">
+            <span>🎂 {{ c.nombre }}</span>
+            {% if c.whatsapp_cumpleanos_url %}
+            <a href="{{ c.whatsapp_cumpleanos_url }}" target="_blank" class="cumple-whatsapp-btn" title="Enviar felicitación por WhatsApp">💬</a>
+            {% endif %}
+          </div>
+          {% endfor %}
+          {% endif %}
+          {% if vista != 'cumples' %}
           {% for cita in dia.citas %}
           <a href="{% url 'cita_editar' cita.pk %}" class="cita-chip estado-{{ cita.estado }}">
             <span class="cita-hora">{{ cita.hora|time:"H:i" }}</span> {{ cita.nombre_display }}
           </a>
           {% endfor %}
+          {% endif %}
         </div>
       </div>
       {% else %}
@@ -70,6 +90,7 @@
     <span><span class="leyenda-dot estado-completada"></span> Completada</span>
     <span><span class="leyenda-dot estado-cancelada"></span> Cancelada</span>
     <span><span class="leyenda-dot estado-no_show"></span> No se presentó</span>
+    <span>🎂 <span style="color:var(--purple);">Cumpleaños</span></span>
   </div>
 </div>
 
@@ -157,6 +178,35 @@
     text-overflow: ellipsis;
   }
   .cita-hora { font-weight: 700; }
+
+  .cumple-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: .68rem;
+    line-height: 1.3;
+    padding: 2px 5px;
+    border-radius: 5px;
+    background: rgba(168,85,247,0.12);
+    color: var(--purple);
+    border: 1px solid rgba(168,85,247,0.3);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .cumple-chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cumple-whatsapp-btn {
+    flex-shrink: 0;
+    text-decoration: none;
+    font-size: .72rem;
+    line-height: 1;
+    opacity: 0.85;
+  }
+  .cumple-whatsapp-btn:hover { opacity: 1; }
 
   .estado-pendiente  { background: rgba(255,214,10,0.12);  color: var(--yellow); border: 1px solid rgba(255,214,10,0.3); }
   .estado-confirmada { background: rgba(0,212,255,0.12);   color: var(--cyan);   border: 1px solid rgba(0,212,255,0.3); }

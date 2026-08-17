@@ -8,6 +8,7 @@ from django.urls import reverse
 
 from .models import Cita, ESTADO_CHOICES
 from .forms import CitaForm
+from clientes.models import Cliente
 
 MESES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
@@ -24,6 +25,10 @@ def calendario(request):
         month = int(request.GET.get('month', hoy.month))
     except ValueError:
         year, month = hoy.year, hoy.month
+
+    vista = request.GET.get('vista', 'todos')
+    if vista not in ('todos', 'citas', 'cumples'):
+        vista = 'todos'
 
     if month < 1:
         year, month = year - 1, 12
@@ -51,6 +56,11 @@ def calendario(request):
     for c in citas_mes:
         citas_por_dia.setdefault(c.fecha.day, []).append(c)
 
+    cumples_mes = Cliente.objects.filter(fecha_nacimiento__month=month)
+    cumples_por_dia = {}
+    for c in cumples_mes:
+        cumples_por_dia.setdefault(c.fecha_nacimiento.day, []).append(c)
+
     semanas = []
     for semana in semanas_numeros:
         fila = []
@@ -63,6 +73,7 @@ def calendario(request):
                     'fecha_iso': date(year, month, dia).isoformat(),
                     'es_hoy': date(year, month, dia) == hoy,
                     'citas': citas_por_dia.get(dia, []),
+                    'cumpleanieros': cumples_por_dia.get(dia, []),
                 })
         semanas.append(fila)
 
@@ -75,7 +86,9 @@ def calendario(request):
         'hoy_year': hoy.year, 'hoy_month': hoy.month,
         'total_mes': citas_mes.count(),
         'pendientes_mes': citas_mes.filter(estado='pendiente').count(),
+        'cumples_mes_total': cumples_mes.count(),
         'estados': ESTADO_CHOICES,
+        'vista': vista,
     })
 
 

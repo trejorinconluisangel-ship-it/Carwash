@@ -27,6 +27,7 @@ class Cliente(models.Model):
     nombre = models.CharField(max_length=150)
     whatsapp = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
+    fecha_nacimiento = models.DateField(null=True, blank=True)
     notas = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     visitas_lealtad = models.IntegerField(default=0)
@@ -48,6 +49,21 @@ class Cliente(models.Model):
         if len(numero) == 10:
             numero = '52' + numero
         return f'https://wa.me/{numero}'
+
+    @property
+    def whatsapp_cumpleanos_url(self):
+        if not self.whatsapp:
+            return ''
+        from urllib.parse import quote
+        numero = ''.join(filter(str.isdigit, self.whatsapp))
+        if len(numero) == 10:
+            numero = '52' + numero
+        primer_nombre = self.nombre.split()[0] if self.nombre else ''
+        mensaje = (
+            f'¡Feliz cumpleaños, {primer_nombre}! 🎉🚗 Todo el equipo de Neowash Auto-Wash te desea un excelente día. '
+            'Como regalo, tienes un detalle especial esperándote en tu próxima visita 🎁'
+        )
+        return f'https://wa.me/{numero}?text={quote(mensaje)}'
 
     @property
     def total_servicios(self):

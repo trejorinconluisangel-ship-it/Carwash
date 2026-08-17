@@ -41,6 +41,20 @@
           <div><a href="mailto:{{ cliente.email }}" class="text-cyan">{{ cliente.email }}</a></div>
         </div>
         {% endif %}
+        {% if cliente.fecha_nacimiento %}
+        <div>
+          <div class="text-muted" style="font-size:.72rem; text-transform:uppercase; letter-spacing:1px;">Cumpleaños</div>
+          <div class="d-flex gap-1 align-center" style="flex-wrap:wrap;">
+            <span class="fw-bold">🎂 {{ cliente.fecha_nacimiento|date:"d/m/Y" }}</span>
+            {% if cliente.whatsapp_cumpleanos_url %}
+            <a href="{{ cliente.whatsapp_cumpleanos_url }}" target="_blank" class="btn btn-sm"
+               style="background:rgba(0,255,136,0.15); color:var(--green); border:1px solid rgba(0,255,136,0.35);">
+              💬 Enviar felicitación
+            </a>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
         {% if cliente.notas %}
         <div>
           <div class="text-muted" style="font-size:.72rem; text-transform:uppercase; letter-spacing:1px;">Notas</div>
