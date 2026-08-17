@@ -15,6 +15,10 @@ urlpatterns = [
 
     path('api/vehiculos-cliente/', views.vehiculos_por_cliente_api, name='vehiculos_por_cliente_api'),
 
+    path('clientes/<int:cliente_pk>/oportunidad/nueva/', views.oportunidad_crear, name='oportunidad_crear'),
+    path('oportunidades/<int:pk>/atender/', views.oportunidad_atender, name='oportunidad_atender'),
+    path('oportunidades/<int:pk>/eliminar/', views.oportunidad_eliminar, name='oportunidad_eliminar'),
+
     path('clientes/<int:pk>/premio-pequeno/', views.premio_pequeno, name='premio_pequeno'),
     path('clientes/<int:pk>/premio-grande/', views.premio_grande, name='premio_grande'),
     path('clientes/<int:pk>/canjear-premio-grande/', views.canjear_premio_grande, name='canjear_premio_grande'),

@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Count, Sum
-from .models import Cliente, Vehiculo, VISITAS_PREMIO_PEQUENO, VISITAS_PREMIO_GRANDE
+from .models import Cliente, Vehiculo, OportunidadCliente, VISITAS_PREMIO_PEQUENO, VISITAS_PREMIO_GRANDE
 from .forms import ClienteForm, VehiculoForm, VehiculoSinClienteForm
 
 
@@ -18,9 +18,11 @@ def cliente_lista(request):
 
 def promocion_masiva(request):
     from django.utils import timezone
+    from django.db.models import Count
 
     q = request.GET.get('q', '').strip()
     categoria = request.GET.get('categoria', '')
+    etiqueta = request.GET.get('etiqueta', '').strip()
     try:
         dias_inactivo = int(request.GET.get('dias_inactivo', '30'))
     except ValueError:
@@ -28,9 +30,20 @@ def promocion_masiva(request):
 
     hoy = timezone.localdate()
 
-    base_qs = Cliente.objects.exclude(whatsapp='').prefetch_related('vehiculos', 'servicios')
+    etiquetas_disponibles = list(
+        OportunidadCliente.objects.filter(atendida=False)
+        .values('etiqueta')
+        .annotate(total=Count('pk'))
+        .order_by('etiqueta')
+    )
+
+    base_qs = Cliente.objects.exclude(whatsapp='').prefetch_related(
+        'vehiculos', 'servicios', 'oportunidades',
+    )
     if q:
         base_qs = base_qs.filter(nombre__icontains=q)
+    if etiqueta:
+        base_qs = base_qs.filter(oportunidades__etiqueta=etiqueta, oportunidades__atendida=False).distinct()
 
     clientes_calc = []
     for c in base_qs:
@@ -46,6 +59,10 @@ def promocion_masiva(request):
         c.es_multi_vehiculo = c.num_vehiculos_calc > 1
         c.es_cumple_mes = bool(c.fecha_nacimiento and c.fecha_nacimiento.month == hoy.month)
         c.es_premio_grande = c.visitas_lealtad >= VISITAS_PREMIO_GRANDE
+        if etiqueta:
+            c.oportunidad_actual = next(
+                (o for o in c.oportunidades.all() if o.etiqueta == etiqueta and not o.atendida), None
+            )
         clientes_calc.append(c)
 
     conteos = {
@@ -58,7 +75,9 @@ def promocion_masiva(request):
         'top_gasto':      sum(1 for c in clientes_calc if c.total_gastado_calc > 0),
     }
 
-    if categoria == 'primerizos':
+    if etiqueta:
+        clientes = clientes_calc
+    elif categoria == 'primerizos':
         clientes = [c for c in clientes_calc if c.es_primerizo]
     elif categoria == 'inactivos':
         clientes = [c for c in clientes_calc if c.es_inactivo]
@@ -81,6 +100,8 @@ def promocion_masiva(request):
         'clientes': clientes,
         'q': q,
         'categoria': categoria,
+        'etiqueta': etiqueta,
+        'etiquetas_disponibles': etiquetas_disponibles,
         'dias_inactivo': dias_inactivo,
         'conteos': conteos,
         'sin_whatsapp': sin_whatsapp,
@@ -131,7 +152,42 @@ def cliente_detalle(request, pk):
         'total_gastado': total_gastado,
         'meta_pequeno': VISITAS_PREMIO_PEQUENO,
         'meta_grande': VISITAS_PREMIO_GRANDE,
+        'oportunidades': cliente.oportunidades.filter(atendida=False),
     })
+
+
+# ── Oportunidades (servicios/productos futuros a ofrecer) ───────────────────
+
+def oportunidad_crear(request, cliente_pk):
+    cliente = get_object_or_404(Cliente, pk=cliente_pk)
+    if request.method == 'POST':
+        etiqueta = request.POST.get('etiqueta', '').strip()
+        notas = request.POST.get('notas', '').strip()
+        if etiqueta:
+            OportunidadCliente.objects.create(cliente=cliente, etiqueta=etiqueta, notas=notas)
+            messages.success(request, 'Oportunidad agregada.')
+        else:
+            messages.error(request, 'Escribe una etiqueta para la oportunidad.')
+    return redirect('cliente_detalle', pk=cliente_pk)
+
+
+def oportunidad_atender(request, pk):
+    obj = get_object_or_404(OportunidadCliente, pk=pk)
+    if request.method == 'POST':
+        obj.atendida = True
+        obj.save(update_fields=['atendida'])
+        messages.success(request, 'Marcada como atendida.')
+    return redirect('cliente_detalle', pk=obj.cliente_id)
+
+
+def oportunidad_eliminar(request, pk):
+    obj = get_object_or_404(OportunidadCliente, pk=pk)
+    if request.method == 'POST':
+        cliente_pk = obj.cliente_id
+        obj.delete()
+        messages.success(request, 'Oportunidad eliminada.')
+        return redirect('cliente_detalle', pk=cliente_pk)
+    return redirect('cliente_detalle', pk=obj.cliente_id)
 
 
 # ── Vehículos ─────────────────────────────────────────────────────────────────

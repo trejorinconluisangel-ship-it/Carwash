@@ -121,3 +121,22 @@ class Vehiculo(models.Model):
     def descripcion_completa(self):
         color = self.get_color_display()
         return f'{color} · {self.get_tipo_display()}'
+
+
+class OportunidadCliente(models.Model):
+    """Etiqueta libre para marcar que a un cliente le vendría bien un servicio o
+    producto que hoy no ofrecemos (o nos falta el insumo). Cuando ya esté
+    disponible, se usa para filtrar a quién ofrecérselo por WhatsApp."""
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='oportunidades')
+    etiqueta = models.CharField(max_length=100, help_text='Ej: Descontaminación de cristales, Pulido de faros...')
+    notas = models.TextField(blank=True, help_text='Detalle de por qué le serviría (opcional)')
+    atendida = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Oportunidad de Cliente'
+        verbose_name_plural = 'Oportunidades de Clientes'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.cliente.nombre} — {self.etiqueta}'

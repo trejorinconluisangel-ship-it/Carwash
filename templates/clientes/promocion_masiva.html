@@ -39,9 +39,25 @@
     <label class="text-muted" style="font-size:.78rem; display:block; margin-bottom:4px;">Días sin visitar</label>
     <input type="number" name="dias_inactivo" value="{{ dias_inactivo }}" min="1" class="form-control">
   </div>
+  {% if etiquetas_disponibles %}
+  <div style="min-width:240px;">
+    <label class="text-muted" style="font-size:.78rem; display:block; margin-bottom:4px;">🎯 Oportunidad marcada</label>
+    <select name="etiqueta" class="form-select">
+      <option value="" {% if not etiqueta %}selected{% endif %}>— No filtrar por oportunidad —</option>
+      {% for et in etiquetas_disponibles %}
+      <option value="{{ et.etiqueta }}" {% if etiqueta == et.etiqueta %}selected{% endif %}>{{ et.etiqueta }} ({{ et.total }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
   <button class="btn btn-outline" type="submit">🔍 Filtrar</button>
-  {% if q or categoria %}<a href="{% url 'promocion_masiva' %}" class="btn btn-outline">✕</a>{% endif %}
+  {% if q or categoria or etiqueta %}<a href="{% url 'promocion_masiva' %}" class="btn btn-outline">✕</a>{% endif %}
 </form>
+{% if etiqueta %}
+<div class="text-muted mb-3" style="font-size:.8rem;">
+  Mostrando clientes con la oportunidad <strong class="text-orange">{{ etiqueta }}</strong> sin atender. Márcala como atendida desde el perfil de cada cliente una vez que le ofrezcas el servicio.
+</div>
+{% endif %}
 
 <div class="card">
   <div class="d-flex justify-between align-center mb-2" style="flex-wrap:wrap; gap:6px;">
@@ -58,6 +74,7 @@
           <th>Vehículos</th>
           <th>Última visita</th>
           <th>Total gastado</th>
+          {% if etiqueta %}<th>Oportunidad</th>{% endif %}
           <th>Acción</th>
         </tr>
       </thead>
@@ -72,6 +89,12 @@
             {% if c.ultima_visita_calc %}{{ c.ultima_visita_calc|date:"d/m/Y" }} ({{ c.dias_sin_venir }}d){% else %}—{% endif %}
           </td>
           <td class="text-green" style="font-size:.85rem;">${{ c.total_gastado_calc|floatformat:0 }}</td>
+          {% if etiqueta %}
+          <td class="text-muted" style="font-size:.78rem; max-width:200px;">
+            {% if c.oportunidad_actual.notas %}{{ c.oportunidad_actual.notas|truncatechars:60 }}{% else %}—{% endif %}
+            <a href="{% url 'cliente_detalle' c.pk %}#oportunidades" class="text-cyan" style="display:block; font-size:.72rem;">Ver perfil</a>
+          </td>
+          {% endif %}
           <td>
             <a href="#" target="_blank" class="btn btn-sm promo-send-btn"
                data-numero="{{ c.numero_whatsapp }}" data-nombre="{{ c.primer_nombre }}"
@@ -82,8 +105,8 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">
-            No hay clientes con WhatsApp registrado{% if q or categoria %} con esos filtros{% endif %}.
+          <td colspan="{% if etiqueta %}8{% else %}7{% endif %}" style="text-align:center; padding:30px; color:var(--text-muted);">
+            No hay clientes con WhatsApp registrado{% if q or categoria or etiqueta %} con esos filtros{% endif %}.
           </td>
         </tr>
         {% endfor %}
