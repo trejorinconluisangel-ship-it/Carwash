@@ -74,6 +74,18 @@
 
   <div style="display:flex; flex-direction:column; gap:14px;">
     {% if obj %}
+    {% if obj.whatsapp_recordatorio_url %}
+    <div class="card" style="border-color:rgba(0,255,136,0.35);">
+      <div class="chart-title">💬 Recordatorio</div>
+      <p class="text-muted" style="font-size:.82rem; margin-bottom:10px;">
+        Avísale a {{ obj.nombre_display }} la fecha y hora de su cita por WhatsApp.
+      </p>
+      <a href="{{ obj.whatsapp_recordatorio_url }}" target="_blank" class="btn" style="width:100%; justify-content:center;
+         background:rgba(0,255,136,0.15); color:var(--green); border:1px solid rgba(0,255,136,0.35);">
+        💬 Enviar recordatorio por WhatsApp
+      </a>
+    </div>
+    {% endif %}
     <div class="card card-green">
       <div class="chart-title">🚿 Cuando se realice el lavado</div>
       <p class="text-muted" style="font-size:.82rem; margin-bottom:10px;">

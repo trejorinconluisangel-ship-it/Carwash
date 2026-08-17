@@ -40,3 +40,41 @@ class Cita(models.Model):
     @property
     def nombre_display(self):
         return self.cliente.nombre if self.cliente else (self.nombre_contacto or 'Cliente sin nombre')
+
+    @property
+    def primer_nombre(self):
+        if self.cliente:
+            return self.cliente.primer_nombre
+        if self.nombre_contacto:
+            return self.nombre_contacto.split()[0]
+        return ''
+
+    @property
+    def telefono_display(self):
+        if self.telefono_contacto:
+            return self.telefono_contacto
+        if self.cliente and self.cliente.whatsapp:
+            return self.cliente.whatsapp
+        return ''
+
+    @property
+    def whatsapp_recordatorio_url(self):
+        tel = self.telefono_display
+        if not tel:
+            return ''
+        from urllib.parse import quote
+        from servicios.models import NEGOCIO_NOMBRE, NEGOCIO_DIRECCION, NEGOCIO_WHATSAPP_1, NEGOCIO_WHATSAPP_2
+
+        numero = ''.join(filter(str.isdigit, tel))
+        if len(numero) == 10:
+            numero = '52' + numero
+        servicio_txt = f' para {self.tipo_servicio.nombre}' if self.tipo_servicio else ''
+        mensaje = (
+            f'🚗💦 *{NEGOCIO_NOMBRE}*\n\n'
+            f'¡Hola{", " + self.primer_nombre if self.primer_nombre else ""}! Te recordamos tu cita{servicio_txt} '
+            f'el {self.fecha.strftime("%d/%m/%Y")} a las {self.hora.strftime("%H:%M")} hrs.\n\n'
+            f'📍 {NEGOCIO_DIRECCION}\n'
+            f'📱 {NEGOCIO_WHATSAPP_1} · {NEGOCIO_WHATSAPP_2}\n\n'
+            f'¡Te esperamos! 🙌'
+        )
+        return f'https://wa.me/{numero}?text={quote(mensaje)}'
