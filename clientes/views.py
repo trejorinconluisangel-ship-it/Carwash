@@ -16,6 +16,26 @@ def cliente_lista(request):
     return render(request, 'clientes/cliente_lista.html', {'clientes': clientes, 'q': q})
 
 
+def promocion_masiva(request):
+    q = request.GET.get('q', '').strip()
+    solo_lealtad = request.GET.get('solo_lealtad') == '1'
+
+    clientes = Cliente.objects.exclude(whatsapp='').order_by('nombre')
+    if q:
+        clientes = clientes.filter(nombre__icontains=q)
+    if solo_lealtad:
+        clientes = clientes.filter(visitas_lealtad__gte=VISITAS_PREMIO_PEQUENO)
+
+    sin_whatsapp = Cliente.objects.filter(whatsapp='').count()
+
+    return render(request, 'clientes/promocion_masiva.html', {
+        'clientes': clientes,
+        'q': q,
+        'solo_lealtad': solo_lealtad,
+        'sin_whatsapp': sin_whatsapp,
+    })
+
+
 def cliente_crear(request):
     form = ClienteForm(request.POST or None)
     if form.is_valid():

@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block title %}Promoción por WhatsApp{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="page-title">📣 Promoción por WhatsApp</div>
+    <div class="page-subtitle">Escribe tu mensaje y envíalo uno por uno — usa {% templatetag openbrace %}nombre{% templatetag closebrace %} para personalizar</div>
+  </div>
+  <a href="{% url 'cliente_lista' %}" class="btn btn-outline">← Volver</a>
+</div>
+
+<div class="card mb-3">
+  <label class="form-label">Mensaje</label>
+  <textarea id="mensajePromo" class="form-control" rows="4">¡Hola {nombre}! 🚗✨ Tenemos una promoción especial esta semana en Neowash Auto-Wash. ¡Te esperamos!</textarea>
+  <div class="text-muted mt-1" style="font-size:.75rem;">{% templatetag openbrace %}nombre{% templatetag closebrace %} se reemplaza por el primer nombre de cada cliente en su link.</div>
+</div>
+
+<!-- ── Filtro ────────────────────────────────────────────────── -->
+<form method="get" class="card mb-3" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+  <div style="flex:1; min-width:220px;">
+    <label class="text-muted" style="font-size:.78rem; display:block; margin-bottom:4px;">Buscar cliente</label>
+    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Nombre..." autocomplete="off">
+  </div>
+  <label class="d-flex gap-1" style="align-items:center; font-size:.85rem; white-space:nowrap; padding-bottom:9px;">
+    <input type="checkbox" name="solo_lealtad" value="1" {% if solo_lealtad %}checked{% endif %}> Solo clientes frecuentes (lealtad)
+  </label>
+  <button class="btn btn-outline" type="submit">🔍 Filtrar</button>
+  {% if q or solo_lealtad %}<a href="{% url 'promocion_masiva' %}" class="btn btn-outline">✕</a>{% endif %}
+</form>
+
+<div class="card">
+  <div class="d-flex justify-between align-center mb-2" style="flex-wrap:wrap; gap:6px;">
+    <div class="chart-title mb-0">{{ clientes|length }} cliente{{ clientes|length|pluralize }} con WhatsApp</div>
+    {% if sin_whatsapp %}<span class="text-muted" style="font-size:.78rem;">{{ sin_whatsapp }} cliente{{ sin_whatsapp|pluralize }} sin WhatsApp registrado (no aparece{{ sin_whatsapp|pluralize:"n," }} aquí)</span>{% endif %}
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:36px;"></th>
+          <th>Cliente</th>
+          <th>WhatsApp</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in clientes %}
+        <tr class="promo-row" id="promo-row-{{ c.pk }}">
+          <td><input type="checkbox" class="promo-check" data-row="promo-row-{{ c.pk }}" title="Marcar como enviado"></td>
+          <td class="fw-bold">{{ c.nombre }}</td>
+          <td class="text-muted">{{ c.whatsapp }}</td>
+          <td>
+            <a href="#" target="_blank" class="btn btn-sm promo-send-btn"
+               data-numero="{{ c.numero_whatsapp }}" data-nombre="{{ c.primer_nombre }}"
+               style="background:rgba(0,255,136,0.15); color:var(--green); border:1px solid rgba(0,255,136,0.35);">
+              💬 Enviar
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" style="text-align:center; padding:30px; color:var(--text-muted);">
+            No hay clientes con WhatsApp registrado{% if q or solo_lealtad %} con esos filtros{% endif %}.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .promo-row.promo-sent {
+    opacity: .4;
+  }
+  .promo-row.promo-sent td:not(:first-child) {
+    text-decoration: line-through;
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const textarea = document.getElementById('mensajePromo');
+    const botones = document.querySelectorAll('.promo-send-btn');
+
+    function actualizarLinks() {
+      const plantilla = textarea.value;
+      botones.forEach(btn => {
+        const numero = btn.dataset.numero;
+        const nombre = btn.dataset.nombre || '';
+        const mensaje = plantilla.split('{nombre}').join(nombre);
+        btn.href = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+      });
+    }
+    textarea.addEventListener('input', actualizarLinks);
+    actualizarLinks();
+
+    document.querySelectorAll('.promo-check').forEach(chk => {
+      chk.addEventListener('change', () => {
+        document.getElementById(chk.dataset.row).classList.toggle('promo-sent', chk.checked);
+      });
+    });
+  });
+</script>
+{% endblock %}

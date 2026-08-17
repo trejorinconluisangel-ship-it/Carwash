@@ -42,25 +42,31 @@ class Cliente(models.Model):
         return self.nombre
 
     @property
-    def whatsapp_url(self):
+    def primer_nombre(self):
+        return self.nombre.split()[0] if self.nombre else ''
+
+    @property
+    def numero_whatsapp(self):
         if not self.whatsapp:
             return ''
         numero = ''.join(filter(str.isdigit, self.whatsapp))
         if len(numero) == 10:
             numero = '52' + numero
-        return f'https://wa.me/{numero}'
+        return numero
+
+    @property
+    def whatsapp_url(self):
+        numero = self.numero_whatsapp
+        return f'https://wa.me/{numero}' if numero else ''
 
     @property
     def whatsapp_cumpleanos_url(self):
-        if not self.whatsapp:
+        numero = self.numero_whatsapp
+        if not numero:
             return ''
         from urllib.parse import quote
-        numero = ''.join(filter(str.isdigit, self.whatsapp))
-        if len(numero) == 10:
-            numero = '52' + numero
-        primer_nombre = self.nombre.split()[0] if self.nombre else ''
         mensaje = (
-            f'¡Feliz cumpleaños, {primer_nombre}! 🎉🚗 Todo el equipo de Neowash Auto-Wash te desea un excelente día. '
+            f'¡Feliz cumpleaños, {self.primer_nombre}! 🎉🚗 Todo el equipo de Neowash Auto-Wash te desea un excelente día. '
             'Como regalo, tienes un detalle especial esperándote en tu próxima visita 🎁'
         )
         return f'https://wa.me/{numero}?text={quote(mensaje)}'
