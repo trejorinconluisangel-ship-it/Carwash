@@ -180,8 +180,14 @@ def servicio_crear(request):
 
     form = ServicioForm(request.POST or None, initial=initial)
     if form.is_valid():
+        if form.cleaned_data.get('es_cortesia'):
+            form.instance.precio_cobrado = 0
+        form.instance._insumos_override = list(form.cleaned_data.get('insumos_usados') or [])
         servicio = form.save()
-        messages.success(request, 'Servicio registrado.')
+        if servicio.es_cortesia:
+            messages.success(request, 'Servicio registrado como cortesía — no se cobró.')
+        else:
+            messages.success(request, 'Servicio registrado.')
 
         if recepcion_obj:
             recepcion_obj.servicio = servicio

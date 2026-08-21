@@ -46,7 +46,7 @@ def dashboard(request):
 
     inicio, fin = _rango_periodo(periodo, fecha_ref)
 
-    servicios_qs  = Servicio.objects.filter(fecha__gte=inicio, fecha__lte=fin)
+    servicios_qs  = Servicio.objects.filter(fecha__gte=inicio, fecha__lte=fin).exclude(es_cortesia=True)
     compras_qs    = Compra.objects.filter(fecha__gte=inicio, fecha__lte=fin)
     ventas_ts_qs  = VentaProducto.objects.filter(fecha__gte=inicio, fecha__lte=fin)
     entradas_ts_qs= EntradaProducto.objects.filter(fecha__gte=inicio, fecha__lte=fin)

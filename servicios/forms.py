@@ -30,7 +30,7 @@ class ServicioForm(forms.ModelForm):
     class Meta:
         model = Servicio
         fields = ['fecha', 'hora', 'tipo_servicio', 'tipo_vehiculo',
-                  'cliente', 'vehiculo', 'precio_cobrado', 'notas']
+                  'cliente', 'vehiculo', 'precio_cobrado', 'es_cortesia', 'insumos_usados', 'notas']
         widgets = {
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'hora': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
@@ -39,5 +39,7 @@ class ServicioForm(forms.ModelForm):
             'cliente': forms.Select(attrs={'class': 'form-select', 'id': 'id_cliente'}),
             'vehiculo': forms.Select(attrs={'class': 'form-select', 'id': 'id_vehiculo'}),
             'precio_cobrado': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.50', 'placeholder': '0.00', 'id': 'id_precio_cobrado'}),
+            'es_cortesia': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_es_cortesia'}),
+            'insumos_usados': forms.CheckboxSelectMultiple(),
             'notas': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }

@@ -15,6 +15,7 @@ from clientes.models import (
 )
 from servicios.models import TipoServicio, TipoVehiculo, PrecioPaquete, Servicio
 from servicios.views import _mapear_tipo_vehiculo
+from insumos.models import Insumo
 
 
 def _entero_o_none(valor):
@@ -87,12 +88,14 @@ def recepcion_nueva(request):
 
         tipo_servicio_id = request.POST.get('tipo_servicio_id')
         tipo_vehiculo_precio_id = request.POST.get('tipo_vehiculo_precio_id')
-        precio_cobrado = request.POST.get('precio_cobrado', '').strip()
+        es_cortesia = request.POST.get('es_cortesia') == 'on'
+        precio_cobrado = '0' if es_cortesia else request.POST.get('precio_cobrado', '').strip()
         if not tipo_servicio_id or not tipo_vehiculo_precio_id or not precio_cobrado:
             messages.error(request, 'Elige el paquete, la categoría del vehículo y confirma el precio para poder cobrar.')
             return redirect('recepcion_nueva')
         tipo_servicio = get_object_or_404(TipoServicio, pk=tipo_servicio_id)
         tipo_vehiculo_precio = get_object_or_404(TipoVehiculo, pk=tipo_vehiculo_precio_id)
+        insumos_usados_ids = request.POST.getlist('insumos_usados')
 
         try:
             diagrama_danos = json.loads(request.POST.get('diagrama_danos') or '{}')
@@ -130,7 +133,7 @@ def recepcion_nueva(request):
             firma_colaborador=request.POST.get('firma_colaborador', ''),
         )
 
-        servicio = Servicio.objects.create(
+        servicio = Servicio(
             fecha=fecha,
             hora=hora_recepcion,
             tipo_servicio=tipo_servicio,
@@ -138,10 +141,16 @@ def recepcion_nueva(request):
             cliente=cliente,
             vehiculo=vehiculo,
             precio_cobrado=precio_cobrado,
+            es_cortesia=es_cortesia,
         )
+        servicio._insumos_override = list(Insumo.objects.filter(pk__in=insumos_usados_ids))
+        servicio.save()
         recepcion.servicio = servicio
         recepcion.save(update_fields=['servicio'])
-        messages.success(request, f'Recepción cobrada — ${servicio.precio_cobrado} registrados.')
+        if es_cortesia:
+            messages.success(request, 'Recepción registrada como cortesía — no se cobró.')
+        else:
+            messages.success(request, f'Recepción cobrada — ${servicio.precio_cobrado} registrados.')
 
         if cliente and float(servicio.precio_cobrado or 0) > 0:
             cliente.visitas_lealtad += 1
@@ -164,6 +173,11 @@ def recepcion_nueva(request):
 
     tipo_map = {codigo: _mapear_tipo_vehiculo(codigo, tipos_vehiculo_precio) for codigo, _ in TIPO_VEHICULO_CHOICES}
 
+    insumos_activos = Insumo.objects.all().order_by('nombre')
+    insumos_por_paquete = {
+        ts.pk: [i.pk for i in ts.insumos.all()] for ts in tipos_servicio
+    }
+
     return render(request, 'recepcion/recepcion_form.html', {
         'clientes': clientes,
         'hoy': timezone.localdate().isoformat(),
@@ -180,6 +194,8 @@ def recepcion_nueva(request):
         'tipos_vehiculo_precio': tipos_vehiculo_precio,
         'precios_json': json.dumps(precios_data),
         'tipo_map_json': json.dumps(tipo_map),
+        'insumos_activos': insumos_activos,
+        'insumos_por_paquete_json': json.dumps(insumos_por_paquete),
     })
 
 

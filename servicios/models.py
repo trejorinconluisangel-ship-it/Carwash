@@ -92,6 +92,10 @@ class Servicio(models.Model):
     precio_cobrado = models.DecimalField(max_digits=8, decimal_places=2)
     costo_insumos = models.DecimalField(max_digits=8, decimal_places=2, default=0,
                                         help_text='Costo estimado de insumos usados en este servicio')
+    insumos_usados = models.ManyToManyField('insumos.Insumo', blank=True, related_name='servicios_usados',
+                                            help_text='Productos realmente usados en este servicio (por defecto, los del paquete)')
+    es_cortesia = models.BooleanField(default=False,
+                                      help_text='Servicio de cortesía: no cuenta en ingresos/ganancia, pero sí gasta insumo')
     notas = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -190,12 +194,17 @@ class Servicio(models.Model):
         is_new = self.pk is None
         insumos = []
         if is_new:
-            insumos = list(self.tipo_servicio.insumos.all())
-            # Costo estimado: promedio de costo por vehículo de cada insumo que usa este paquete
+            # _insumos_override: lista de Insumo elegida a mano (ej. al probar un producto
+            # distinto del paquete). Si no se indica, se usan los del paquete por defecto.
+            insumos = getattr(self, '_insumos_override', None)
+            if insumos is None:
+                insumos = list(self.tipo_servicio.insumos.all())
             self.costo_insumos = round(sum(i.costo_por_servicio for i in insumos), 2)
         super().save(*args, **kwargs)
         if is_new:
+            self.insumos_usados.set(insumos)
             # Conteo automático de rendimiento: +1 vehículo al envase activo de cada insumo usado
+            # (se cuenta también en servicios de cortesía, para no perder el rendimiento real)
             for insumo in insumos:
                 envase = insumo.envase_activo
                 if envase:

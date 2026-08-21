@@ -1,6 +1,14 @@
 {% extends 'base.html' %}
 {% block title %}Registrar Servicio{% endblock %}
 
+{% block extra_css %}
+<style>
+  .insumo-checklist > div { display: flex; flex-direction: column; gap: 6px; }
+  .insumo-checklist label { display: flex; align-items: center; gap: 8px; font-size: .85rem; cursor: pointer; padding: 2px 0; }
+  .insumo-checklist input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--cyan); flex-shrink: 0; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="topbar">
   <div>
@@ -80,6 +88,10 @@
           {{ form.precio_cobrado }}
         </div>
       </div>
+      <label class="mt-2" style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:.88rem;">
+        {{ form.es_cortesia }}
+        🎁 Cortesía — sin costo, no cuenta en ingresos ni ganancia (pero sí descuenta el insumo usado)
+      </label>
       <div class="mt-2">
         <label class="form-label">Notas</label>
         {{ form.notas }}
@@ -112,11 +124,10 @@
 
     <!-- Insumos que se usarán -->
     <div class="card" style="border-color:rgba(168,85,247,0.2);">
-      <div class="chart-title">🧴 Productos que se Usarán</div>
-      <div id="insumos_preview">
-        <div class="text-muted" style="text-align:center; padding:12px; font-size:.82rem;">
-          Selecciona tipo de servicio
-        </div>
+      <div class="chart-title">🧴 Productos Usados</div>
+      <div class="text-muted mb-1" style="font-size:.75rem;">Se marcan solos según el paquete — cámbialos si usaste otro producto</div>
+      <div id="insumos_checkboxes" class="insumo-checklist">
+        {{ form.insumos_usados }}
       </div>
     </div>
 
@@ -132,7 +143,7 @@ const INSUMOS  = {
   {% for ts in tipos_servicio %}
   "{{ ts.pk }}": [
     {% for i in ts.insumos.all %}
-    { nombre: "{{ i.nombre }}", costo: {{ i.costo_por_servicio|floatformat:2 }}, tieneEnvase: {% if i.envase_activo %}true{% else %}false{% endif %} },
+    { id: {{ i.pk }}, nombre: "{{ i.nombre }}", costo: {{ i.costo_por_servicio|floatformat:2 }}, tieneEnvase: {% if i.envase_activo %}true{% else %}false{% endif %} },
     {% endfor %}
   ],
   {% endfor %}
@@ -147,10 +158,10 @@ const selCliente  = document.getElementById('id_cliente');
 const selVehClte  = document.getElementById('id_vehiculo');
 const precioInput = document.getElementById('id_precio_cobrado');
 const precioDisplay = document.getElementById('precio_display');
-const insumosDiv  = document.getElementById('insumos_preview');
 const panelVeh    = document.getElementById('panel_vehiculo_cliente');
 const vehInfo     = document.getElementById('vehiculo_info');
 const clienteAcciones = document.getElementById('cliente_acciones');
+const cortesiaCheck = document.getElementById('id_es_cortesia');
 
 // ── Precio sugerido ────────────────────────────────
 function calcularPrecio() {
@@ -168,21 +179,26 @@ function calcularPrecio() {
 }
 
 function mostrarInsumos(tsId) {
-  if (!tsId || !INSUMOS[tsId] || !INSUMOS[tsId].length) {
-    insumosDiv.innerHTML = '<div class="text-muted" style="text-align:center;padding:12px;font-size:.82rem;">Sin insumos asignados</div>';
-    return;
-  }
-  let html = '';
-  INSUMOS[tsId].forEach(i => {
-    html += `<div style="padding:7px 0; border-bottom:1px solid var(--border);">
-      <div class="d-flex justify-between align-center">
-        <span style="font-size:.83rem;">${i.nombre}</span>
-        <span class="badge badge-purple" style="font-size:.68rem;">$${i.costo.toFixed(2)}/servicio</span>
-      </div>
-      ${!i.tieneEnvase ? '<div class="text-orange" style="font-size:.72rem;">⚠ Sin envase abierto — no se contará este servicio</div>' : ''}
-    </div>`;
+  const idsDelPaquete = (INSUMOS[tsId] || []).map(i => String(i.id));
+  document.querySelectorAll('#insumos_checkboxes input[type=checkbox]').forEach(chk => {
+    chk.checked = idsDelPaquete.includes(chk.value);
   });
-  insumosDiv.innerHTML = html;
+}
+
+// ── Cortesía: sin costo, deshabilita el precio ──────
+if (cortesiaCheck) {
+  cortesiaCheck.addEventListener('change', () => {
+    if (cortesiaCheck.checked) {
+      precioInput.value = 0;
+      precioInput.readOnly = true;
+      precioInput.style.opacity = '.5';
+    } else {
+      precioInput.readOnly = false;
+      precioInput.style.opacity = '1';
+      precioInput.dataset.autoset = 'true';
+      calcularPrecio();
+    }
+  });
 }
 
 // ── Cargar vehículos del cliente ───────────────────

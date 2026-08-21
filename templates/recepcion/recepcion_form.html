@@ -165,6 +165,24 @@
           <input type="number" name="precio_cobrado" id="id_precio_cobrado" class="form-control" step="0.5" min="0" placeholder="0.00">
         </div>
       </div>
+      <label class="mt-2" style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:.88rem;">
+        <input type="checkbox" name="es_cortesia" id="id_es_cortesia" class="form-check-input">
+        🎁 Cortesía — sin costo, no cuenta en ingresos ni ganancia (pero sí descuenta el insumo usado)
+      </label>
+
+      <label class="form-label mt-2">Productos usados en este servicio</label>
+      <div class="text-muted mb-1" style="font-size:.75rem;">Se marcan solos según el paquete elegido — desmárcalos o cambia por otro si usaste un producto distinto (ej. mientras pruebas nuevas marcas)</div>
+      <div class="chip-group" id="insumos_usados_group">
+        {% for insumo in insumos_activos %}
+        <label class="chip">
+          <input type="checkbox" name="insumos_usados" value="{{ insumo.pk }}" class="insumo-check" hidden>
+          {{ insumo.nombre }}
+        </label>
+        {% empty %}
+        <span class="text-muted" style="font-size:.82rem;">No hay insumos registrados — agrégalos en <a href="{% url 'insumo_lista' %}" class="text-cyan">Insumos</a>.</span>
+        {% endfor %}
+      </div>
+
       <label class="form-label mt-2">Entrega</label>
       <div class="chip-group" data-name="entrega">
         {% for valor, etiqueta in entrega_choices %}
@@ -382,6 +400,43 @@ document.querySelectorAll('input[name=tipo_servicio_id], input[name=tipo_vehicul
   inp.addEventListener('change', calcularPrecioRecepcion);
 });
 precioInput.addEventListener('input', () => { precioInput.dataset.autoset = 'false'; });
+
+// ── Cortesía: sin costo, deshabilita el precio ──────
+const cortesiaCheck = document.getElementById('id_es_cortesia');
+cortesiaCheck.addEventListener('change', () => {
+  if (cortesiaCheck.checked) {
+    precioInput.value = 0;
+    precioInput.readOnly = true;
+    precioInput.style.opacity = '.5';
+  } else {
+    precioInput.readOnly = false;
+    precioInput.style.opacity = '1';
+    precioInput.dataset.autoset = 'true';
+    calcularPrecioRecepcion();
+  }
+});
+
+// ── Insumos usados: se marcan solos según el paquete ─
+const INSUMOS_POR_PAQUETE = {{ insumos_por_paquete_json|safe }};
+const insumoChecks = document.querySelectorAll('.insumo-check');
+
+function marcarInsumosDelPaquete(tsId) {
+  const ids = (INSUMOS_POR_PAQUETE[tsId] || []).map(String);
+  insumoChecks.forEach(chk => {
+    chk.checked = ids.includes(chk.value);
+    chk.dispatchEvent(new Event('change'));
+  });
+}
+
+insumoChecks.forEach(chk => {
+  chk.addEventListener('change', () => {
+    chk.closest('.chip').classList.toggle('active', chk.checked);
+  });
+});
+
+document.querySelectorAll('input[name=tipo_servicio_id]').forEach(inp => {
+  inp.addEventListener('change', () => marcarInsumosDelPaquete(inp.value));
+});
 
 // ── Diagrama de daños (sedán / SUV / pick up, 4 vistas cada uno) ──
 const DIAGRAMA_TIPOS = [{% for valor, etiqueta in diagrama_tipo_choices %}'{{ valor }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
